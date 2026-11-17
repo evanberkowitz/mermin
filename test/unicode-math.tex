@@ -1,0 +1,8 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{unicode-math}\usepackage{mermin}
+\begin{document}
+% unicode-math recategorizes Γ after the .aux is read; the phrase must still
+% compare equal, so the rerun request stops.
+\begin{equation} a=1 \aka[Γ action]{gamma} \end{equation}
+The \eq{gamma} holds.
+\end{document}

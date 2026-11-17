@@ -238,15 +238,18 @@
 % \texttt{mermin.sty} among its files.
 % With the \textsf{mathtools} option |showonlyrefs|, a line is numbered
 % when any of its keys is cited.
-% \textsf{breqn}'s |dmath| and |dseries| are supported.
+% \textsf{breqn}'s |dmath| and |dseries|, the \textsf{cases} package's
+% |numcases| and |subnumcases|, \textsf{IEEEtrantools}' |IEEEeqnarray|,
+% and the kernel's \textsf{eqnarray} are supported.
 % So are \textsf{xr} and \textsf{xr-hyper}: |\eq{S-|\meta{key}|}| cites an
 % equation of a document loaded with |\externaldocument[S-]|, and prints
 % its phrase; a key without a typeset phrase prints with its prefix, so
 % such keys are best given one.
 % \textsf{autonum} is not supported: it copies \cs{label} before this
 % package can attach its extra keys, and numbers a line by its first key only.
-% Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
-% equations, so \cs{eq} warns about them; \textsf{align} replaces it.
+% \cs{aka}, like \cs{label}, vanishes from tables of contents, running
+% heads, and PDF bookmarks; in a bookmark \cs{eq} gives its phrase and
+% number as plain text.
 %
 % The package's repository,
 % \url{https://github.com/evanberkowitz/mermin}, also holds a test suite
@@ -321,7 +324,12 @@
 % \end{macro}
 %
 % \begin{macro}{\alsolabel}
-% The user command calls whatever \cs{label} means at that point, with a
+% Where \LaTeX\ disables \cs{label} by making it |\@gobble| or |\relax|,
+% as it does in the text written to a table of contents or a running head,
+% \cs{alsolabel} disappears with it, together with its arguments.
+% It is therefore expandable, and only chooses between that and the real
+% command, |\mermin@alsolabel|, which is robust.
+% The real command calls whatever \cs{label} means at that point, with a
 % flag raised.
 % The measuring passes of \textsf{amsmath} gobble or defer \cs{label}, and
 % \cs{alsolabel} thereby inherits the same treatment.
@@ -337,9 +345,18 @@
 % after it in running text, so the whole command is wrapped in its own
 % |\@bsphack| and |\@esphack|.
 %    \begin{macrocode}
-\NewDocumentCommand\alsolabel{o m}{%
+\def\alsolabel{%
+  \ifx\label\@gobble
+    \@xp\mermin@gobble@aka
+  \else\ifx\label\relax
+    \@xp\@xp\@xp\mermin@gobble@aka
+  \else
+    \@xp\@xp\@xp\mermin@alsolabel
+  \fi\fi}
+\NewExpandableDocumentCommand\mermin@gobble@aka{o m}{}
+\NewDocumentCommand\mermin@alsolabel{o m}{%
   \@bsphack
-  \IfValueT{#1}{\mermin@writephrase{#2}{#1}}%
+  \IfValueTF{#1}{\mermin@writephrase{#2}{#1}}{\mermin@writephrase{#2}{}}%
   \begingroup
     \mermin@alsotrue
     \ifdefined\mermin@cref@old
@@ -361,19 +378,38 @@
 % |\mermin@ph@|\meta{key}.
 % The phrase does not depend on the page, so it is written immediately;
 % a display typeset twice writes it twice, which is harmless.
+% The key is expanded as \cs{label} expands it, so that a key such as
+% |sec\thesection:mass| is recorded as the same key in both places.
+% Every \cs{aka} writes a record, with an empty phrase when it has none,
+% so that removing a phrase also asks for another run.
+% Phrases are compared by their characters only: \textsf{unicode-math}
+% changes the category of letters such as $\Gamma$ after the \texttt{.aux} file
+% is first read, and a comparison of tokens would ask for a rerun forever.
 % A |\providecommand| at the top of the \texttt{.aux} file lets a document
 % that stops loading the package read its old \texttt{.aux} without error.
 %    \begin{macrocode}
 \def\mermin@writephrase#1#2{%
   \if@filesw
-    \immediate\write\@auxout{%
-      \string\mermin@newphrase{\unexpanded{#1}}{\unexpanded{#2}}}%
+    \begingroup
+      \let\protect\@unexpandable@protect
+      \immediate\write\@auxout{%
+        \string\mermin@newphrase{#1}{\unexpanded{#2}}}%
+    \endgroup
   \fi}
 \def\mermin@newphrase#1#2{%
   \ifx\@newl@bel\@testdef
-    \@testdef{mermin@ph}{#1}{#2}%
+    \if\relax\detokenize{#2}\relax
+      \@ifundefined{mermin@ph@#1}{}{\@tempswatrue}%
+    \else
+      \edef\reserved@a{\detokenize{#2}}%
+      \edef\reserved@b{\detokenize\@xp\@xp\@xp
+        {\csname mermin@ph@#1\endcsname}}%
+      \ifx\reserved@a\reserved@b\else\@tempswatrue\fi
+    \fi
   \else
-    \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}%
+    \if\relax\detokenize{#2}\relax\else
+      \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}%
+    \fi
   \fi}
 \AtBeginDocument{%
   \if@filesw
@@ -392,13 +428,22 @@
 %    \begin{macrocode}
 \def\mermin@markeq#1{%
   \if@filesw
-    \immediate\write\@auxout{\string\mermin@equation{\unexpanded{#1}}}%
+    \begingroup
+      \let\protect\@unexpandable@protect
+      \immediate\write\@auxout{\string\mermin@equation{#1}}%
+    \endgroup
   \fi}
 \def\mermin@equation#1{%
   \expandafter\gdef\csname mermin@eq@#1\endcsname{}}
 \AtBeginDocument{%
   \if@filesw
     \immediate\write\@auxout{%
+      \string\providecommand\string\mermin@equation[1]{}}%
+  \fi}
+\AddToHook{include/before}{%
+  \if@filesw
+    \immediate\write\@partaux{%
+      \string\providecommand\string\mermin@newphrase[2]{}%
       \string\providecommand\string\mermin@equation[1]{}}%
   \fi}
 %    \end{macrocode}
@@ -445,8 +490,10 @@
 % |\mermin@markargs| records the key in any of these forms.
 %    \begin{macrocode}
 \def\mermin@markargs#1{%
+  \iffalse{\fi
   \mermin@keyof#1\mermin@nil
-  \@xp\mermin@markeq\@xp{\mermin@rawkey}}
+  \@xp\mermin@markeq\@xp{\mermin@rawkey}%
+  \iffalse}\fi}
 \def\mermin@keyof{%
   \@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
 \def\mermin@keyof@plain#1\mermin@nil{\def\mermin@rawkey{#1}}
@@ -457,7 +504,8 @@
 % \begin{macro}{\mermin@marklabels}
 % The label of a \textsf{subequations} group, numbered like ``(12)'', is
 % an ordinary \cs{label} between the displays, and the displays of
-% \textsf{breqn}, |dmath| and |dseries|, use the ordinary \cs{label} too.
+% \textsf{breqn}, |dmath| and |dseries|, use the ordinary \cs{label} too,
+% as do \textsf{eqnarray}, |numcases|, |subnumcases|, and |IEEEeqnarray|.
 % Inside these environments \cs{label} therefore also records its key.
 % The \textsf{amsmath} displays within them install their own \cs{label},
 % and an environment nested in another, such as |dmath| in |dgroup| or in
@@ -472,6 +520,11 @@
 \AddToHook{env/subequations/begin}{\mermin@marklabels}
 \AddToHook{env/dmath/begin}{\mermin@marklabels}
 \AddToHook{env/dseries/begin}{\mermin@marklabels}
+\AddToHook{env/eqnarray/begin}{\mermin@marklabels}
+\AddToHook{env/numcases/begin}{\mermin@marklabels}
+\AddToHook{env/subnumcases/begin}{\mermin@marklabels}
+\AddToHook{env/IEEEeqnarray/begin}{\mermin@marklabels}
+\AddToHook{env/IEEEeqnarray*/begin}{\mermin@marklabels}
 \def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
 \def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
 %    \end{macrocode}
@@ -523,9 +576,11 @@
     \gdef\mermin@queue{}%
     \global\let\mermin@tag\df@label
   \fi
+  \iffalse{\fi
   \@xp\mermin@keyof\mermin@form\mermin@nil
   \@ifundefined{MT_r_\mermin@rawkey}{}%
     {\global\@namedef{MT_r_\df@label}{}}%
+  \iffalse}\fi
   \begingroup
     \let\mermin@found\@empty
     \def\do##1{\def\mermin@tmp{##1}%
@@ -673,6 +728,7 @@
 % It then prints the typeset phrase recorded for that key, or the argument
 % if none was recorded, a tie, and the equation number from \cs{eqref},
 % which \textsf{hyperref} makes a link.
+% In math mode the whole citation is set as text, with \cs{text}.
 %    \begin{macrocode}
 \NewDocumentCommand\eqcite{m}{%
   \mermin@eq@key{#1}%
@@ -681,10 +737,11 @@
       \PackageWarning{mermin}{`#1' is not an equation label, but
         \string\eq\space prints\MessageBreak a parenthesized equation
         number}}{}}%
-  \@ifundefined{mermin@ph@\mermin@key}%
-    {\@ifundefined{r@\mermin@key}{\detokenize{#1}}{#1}}%
-    {\csname mermin@ph@\mermin@key\endcsname}%
-  ~\@xp\eqref\@xp{\mermin@key}%
+  \ifmmode\@xp\text\else\@xp\@firstofone\fi
+  {\@ifundefined{mermin@ph@\mermin@key}%
+     {\@ifundefined{r@\mermin@key}{\detokenize{#1}}{#1}}%
+     {\csname mermin@ph@\mermin@key\endcsname}%
+   ~\@xp\eqref\@xp{\mermin@key}}%
 }
 \def\mermin@eq@key#1{%
   \def\mermin@key{#1}%
@@ -704,20 +761,49 @@
 % is still free.
 % Otherwise the existing command is kept and the user is told to write the
 % long name.
-% Each short name is a protected macro that expands to the long one, so
-% that it survives moving arguments such as section titles; in some
-% \LaTeX\ releases \cs{NewCommandCopy} loses that protection.
+% Each short name is a copy of the long one made with \cs{let}, so it
+% keeps the long one's behaviour in moving arguments.
+% For \textsf{hyperref}'s bookmarks \cs{aka} and \cs{alsolabel} vanish,
+% and \cs{eq} and \cs{eqcite} expand to the phrase and \cs{ref} of the
+% number.
+% In text that \cs{MakeUppercase} changes, such as running heads, the
+% argument of \cs{eq} is kept as written, since it is a key.
 %    \begin{macrocode}
 \def\mermin@shortname#1#2{%
   \@ifundefined{#1}%
-    {\@xp\protected\@xp\def\csname #1\endcsname{#2}}%
+    {\@xp\let\csname #1\endcsname#2}%
     {\PackageWarningNoLine{mermin}{\@backslashchar#1 was already defined,
       probably by another\MessageBreak package, and is left alone; write
       \string#2\space instead}}}
 \AddToHook{begindocument/end}{%
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
+  \ifdefined\pdfstringdefDisableCommands
+    \pdfstringdefDisableCommands{%
+      \let\alsolabel\mermin@gobble@aka
+      \let\eqcite\mermin@pdf@eq
+      \ifx\aka\mermin@alsolabel@short\let\aka\mermin@gobble@aka\fi
+      \ifx\eq\mermin@eqcite@short\let\eq\mermin@pdf@eq\fi}%
+  \fi
+  \@ifundefined{l_text_case_exclude_arg_tl}{}{%
+    \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
+      {\eqcite}%
+    \ifx\eq\mermin@eqcite@short
+      \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
+        {\eq}%
+    \fi}%
 }
+\let\mermin@alsolabel@short\alsolabel
+\let\mermin@eqcite@short\eqcite
+\def\mermin@pdf@eq#1{%
+  \ifcsname r@#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
+    {\mermin@pdf@cite{#1}{#1}}%
+    {\ifcsname r@eq:#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
+       {\mermin@pdf@cite{#1}{eq:#1}}{\mermin@pdf@cite{#1}{#1}}}}
+\def\mermin@pdf@cite#1#2{%
+  \ifcsname mermin@ph@#2\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
+    {\csname mermin@ph@#2\endcsname}{#1}%
+  \space(\ref{#2})}
 %</package>
 %    \end{macrocode}
 % \end{macro}
