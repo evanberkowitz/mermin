@@ -167,7 +167,8 @@
 % no change: when no label \meta{phrase} exists, \cs{eq} uses
 % |eq:|\meta{phrase}.
 % For example, |\eq{shift relation}| cites the line labeled
-% |\label{eq:shift relation}|.
+% |\label{eq:shift relation}|; so does |\eq{eq:shift relation}|, and both
+% print ``shift relation'', without the prefix.
 % \cs{eq} prints its argument as the phrase, so a key that is not
 % printable text, such as |E_field|, also needs a phrase.
 % Without one \cs{eq} prints the key verbatim and, once the label exists,
@@ -249,6 +250,8 @@
 % It works with \textsf{hyperref} and \textsf{cleveref} loaded either
 % before or after it; it loads \textsf{amsmath} itself, which
 % \textsf{cleveref} still requires to be loaded before it.
+% Load \textsf{amsmath} with options, such as |fleqn|, before
+% \textsf{mermin}, as before any package that loads it.
 % It requires a \LaTeX\ format from 2021-11-15 or later, for the
 % hooks it uses.
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
@@ -825,18 +828,18 @@
   \ifmmode\@xp\text\else\@xp\@firstofone\fi
   {\@ifundefined{mermin@ph@\mermin@key}%
      {\@ifundefined{r@\mermin@key}%
-        {\mermin@verbatim{#1}}%
+        {\mermin@ifunprintable{#1}{\mermin@verbatim{#1}}{#1}}%
         {\@ifundefined{mermin@xrdef@\mermin@key}%
-           {\def\mermin@text{#1}}%
+           {\def\mermin@text{#1}%
+            \mermin@stripeq\relax#1\mermin@stop eq:\mermin@stop\mermin@nil}%
            {\@xp\let\@xp\mermin@text
               \csname mermin@xrdef@\mermin@key\endcsname}%
          \@xp\mermin@ifunprintable\@xp{\mermin@text}%
            {\@ifundefined{mermin@xrdef@\mermin@key}%
               {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
-                 text,\MessageBreak so it is printed verbatim; give the line
-                 \MessageBreak
-                 \mermin@akacs[\mermin@phrasemeta]{\mermin@key}\space
-                 beside its\MessageBreak\string\label{\mermin@key}}}%
+                 text,\MessageBreak so it is printed verbatim; where it is
+                 defined, write\MessageBreak
+                 \mermin@akacs[\mermin@phrasemeta]{\mermin@key}}}%
               {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
                  text,\MessageBreak so it is printed verbatim; give it a
                  phrase in the\MessageBreak document that defines
@@ -847,6 +850,13 @@
    ~\@xp\eqref\@xp{\mermin@key}}%
 }
 \def\mermin@phrasemeta{<phrase>}
+\def\mermin@stripeq#1eq:#2\mermin@stop#3\mermin@nil{%
+  \def\mermin@tmp{#1}%
+  \ifx\mermin@tmp\mermin@relax\def\mermin@text{#2}\fi}
+\def\mermin@pdftext#1{%
+  \mermin@pdftext@\relax#1\mermin@stop eq:\mermin@stop\mermin@nil{#1}}
+\def\mermin@pdftext@#1eq:#2\mermin@stop#3\mermin@nil#4{%
+  \if\relax\detokenize\@xp{\@gobble#1}\relax#2\else#4\fi}
 \def\mermin@akacs{\string\alsolabel}
 \def\mermin@eqcs{\string\eqcite}
 \def\mermin@verbatim#1{{\normalfont\ttfamily\detokenize{#1}}}
@@ -930,7 +940,7 @@
     {\csname mermin@ph@#2\endcsname}%
     {\ifcsname mermin@xrdef@#2\endcsname
        \@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-       {\csname mermin@xrdef@#2\endcsname}{#1}}%
+       {\csname mermin@xrdef@#2\endcsname}{\mermin@pdftext{#1}}}%
   \space(\ref{#2})}
 %</package>
 %    \end{macrocode}

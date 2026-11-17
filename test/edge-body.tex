@@ -24,4 +24,7 @@ ORDER: \eq{order}.
 % An alias, then a phrase for the key the line's \label gives.
 \begin{equation} i=10 \aka{alias} \aka[both phrase]{both} \label{both} \end{equation}
 BOTH: \eq{alias}; \eq{both}.
+% \text typesets \aka four times; an eq: key prints without its prefix.
+\begin{equation} j=11 \label{eq:prefixed} \quad\text{(\aka{texted})} \end{equation}
+PREFIX: \eq{eq:prefixed}; \eq{texted}.
 \end{document}

@@ -74,6 +74,7 @@ check:
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error beamer >/dev/null || { echo "beamer: LaTeX error"; exit 1; }; done
 	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
 	@pdftotext beamer.pdf - | grep -qF 'BSUB: (3); (4).' || { echo "beamer: overlays in subequations or multline"; exit 1; }
+	@grep -qF 'newlabel{frametext}{{2}{3}' beamer.aux || { echo "beamer: overlay outside a display"; exit 1; }
 	@# \eq warns about non-equations even when no equation is labeled.
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error nomark >/dev/null || { echo "nomark: LaTeX error"; exit 1; }; done
 	@grep -c 'is not an equation label' nomark.log | grep -qx 2 || { echo "nomark: expected two warnings"; exit 1; }
@@ -89,6 +90,7 @@ check:
 	  pdftotext $$c.pdf - | grep -qF 'MIXED: mixed phrase (9).' || { echo "$$c: a key given twice on one line"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'ORDER: order phrase (10).' || { echo "$$c: \\aka before \\label of the same key"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'BOTH: alias (11); both phrase (11).' || { echo "$$c: alias before a phrased \\label key"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'PREFIX: prefixed (12); texted (12).' || { echo "$$c: eq: prefix printed, or \\aka in \\text"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
 	done
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
@@ -99,7 +101,7 @@ check:
 	@$(ENGINE) -interaction=nonstopmode -halt-on-error inc-without >/dev/null || { echo "inc-without: cannot read inc-ch1.aux without mermin"; exit 1; }
 	@printf '%s\n' 'include checks pass'
 	@# unicode-math (LuaLaTeX and XeLaTeX only): a Greek phrase must settle.
-	@if [ "$(ENGINE)" != pdflatex ]; then \
+	@if ! echo "$(ENGINE)" | grep -q pdflatex; then \
 	  rm -f unicode-math.aux; \
 	  for i in 1 2 3; do $(ENGINE) -interaction=nonstopmode -halt-on-error unicode-math >/dev/null || { echo "unicode-math: LaTeX error"; exit 1; }; done; \
 	  ! grep -q 'may have changed' unicode-math.log || { echo "unicode-math: rerun requested forever"; exit 1; }; \

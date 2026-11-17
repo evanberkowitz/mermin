@@ -12,5 +12,8 @@ BEAMER: \eq{one}; \eq{two}.
 \end{subequations}
 \begin{multline} e\\=f \aka<1->{ml} \end{multline}
 BSUB: \eqref{grp}; \eqref{ml}.
+% Outside a display the overlay goes to beamer's \label: the label is
+% on the second slide of this frame, not the first.
+Text \pause more\aka<2>{frametext}.
 \end{frame}
 \end{document}

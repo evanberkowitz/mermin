@@ -13,7 +13,7 @@ for aux in sys.argv[1:]:
         print(f'{aux}: MISSING {sorted(missing)}'); ok = False
     groups = collections.defaultdict(dict)
     for k, v in labels.items():
-        groups[k.split('-')[0]][k] = re.sub(r'\{[^{}]*\}\{\}$', '', v)  # ignore trailing extra field
+        groups[k.split('-')[0]][k] = re.sub(r'\{\}$', '', v)  # ignore the empty trailing field; keep the anchor
     nums = {}
     for g, ks in sorted(groups.items(), key=lambda x: int(x[0][1:])):
         vals = set(ks.values())
