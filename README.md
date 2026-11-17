@@ -4,7 +4,7 @@ Tools for writing equations the way N. David Mermin asks in
 "What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (1989),
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
-Version 0.3, 2026/11/16.
+Version 0.1, 2026/11/16.
 
 ## Description
 
