@@ -1,0 +1,9 @@
+\documentclass{article}
+% mermin, then xr and xr-hyper, each with its own \XR@test: mermin must
+% wrap the second as well.
+\usepackage{amsmath}\usepackage{mermin}
+\usepackage{xr}\usepackage{xr-hyper}\usepackage{hyperref}
+\externaldocument[S-]{xr-supp}
+\begin{document}
+XRBOTH: the \eq{S-plain}.
+\end{document}

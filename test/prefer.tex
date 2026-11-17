@@ -1,0 +1,12 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}
+% A section labeled `mass' and an equation labeled `eq:mass': \eq{mass}
+% cites the equation, quietly.
+\begin{document}
+\section{Intro}
+\section{Mass}\label{mass}
+\begin{equation} a=b \end{equation}
+\begin{equation} c=d \end{equation}
+\begin{equation} m=1 \label{eq:mass} \end{equation}
+PREFER: the \eq{mass}.
+\end{document}

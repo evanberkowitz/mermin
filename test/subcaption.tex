@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}
+\usepackage[list=true]{subcaption}
+% subcaption's list of figures disables \label with \caption@gobble; \aka
+% must vanish there too, not define its key again.
+\begin{document}
+\listoffigures
+\begin{figure}
+  \begin{subfigure}{.4\linewidth}x\subcaption{Left\aka{sub:left}}\end{subfigure}
+  \caption{Both}
+\end{figure}
+SUBCAPTION: \ref{sub:left}.
+\end{document}
