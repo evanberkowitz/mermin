@@ -233,9 +233,11 @@
 % number, and it warns when its key names anything else.
 %
 % On a line without a number, such as one with \cs{notag} or in
-% |equation*|, \cs{aka} is seldom what is wanted: in \textsf{align} it
-% labels the next numbered line, even one with its own \cs{label}, where
-% two \cs{label}s would be an error.
+% |equation*|, \cs{aka} does what \cs{label} would do there, which is
+% seldom what is wanted, and \cs{eq} cannot tell: on an \textsf{align}
+% line it labels the next numbered line, even one with its own
+% \cs{label}, or nothing on the last line; in \textsf{gather} its number
+% is empty; and in |equation*| it takes the section's number.
 % Put it on a numbered line.
 %
 % \subsection{Long names}
@@ -307,6 +309,9 @@
 % release of 2022-06 on, since it is printed
 % from its key; for a running head, give the heading a short form without
 % \cs{eq}, as in |\section[|\ldots|]{|\ldots|}|.
+% REVTeX sets the section headings themselves in capitals, and the phrase
+% stays lowercase there (``THE anomaly condition (1)''); \cs{eqref} in
+% the same place fails altogether, printing ``(??)''.
 % Classes that use the primitive \cs{uppercase}, such as \textsf{mnras}
 % and \textsf{aastex631}, capitalize the key itself, which breaks
 % \cs{eq} there as it breaks \cs{eqref}; wrap such a citation in a
