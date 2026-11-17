@@ -165,22 +165,18 @@
 % \end{align}
 % \end{verbatim}
 %
+% \subsection{Phrases and keys}
+%
 % Labels written with an |eq:| prefix, as many papers already have, need
 % no change: when no label \meta{phrase} exists, \cs{eq} uses
 % |eq:|\meta{phrase}.
 % For example, |\eq{shift relation}| cites the line labeled
 % |\label{eq:shift relation}|; so does |\eq{eq:shift relation}|, and both
 % print ``shift relation'', without the prefix.
-% \cs{eq} prints its argument as the phrase, so a key that is not
-% printable text, such as |E_field|, also needs a phrase.
-% Without one \cs{eq} prints the key verbatim and, once the label exists,
-% warns.
-% To give a phrase to a line that already has a \cs{label}, add \cs{aka}
-% with the same key, |\label{E_field}\aka[$E$ field]{E_field}|, or replace
-% the \cs{label} with it.
-% A phrase with mathematics is dropped from PDF bookmarks, as mathematics
-% is from any bookmark; \textsf{hyperref}'s \cs{texorpdfstring} gives a
-% plain-text form, as in |\aka[\texorpdfstring{$E$}{E} field]{E_field}|.
+% If |shift relation| and |eq:shift relation| both exist and label
+% different equations, \cs{eq} cites the first and warns.
+%
+% \cs{eq} prints its argument as the phrase.
 % A phrase that cannot be a key, because it contains mathematics or a
 % command, is given where the label is defined, as the optional argument of
 % \cs{aka}, and every citation then uses the plain key.
@@ -212,45 +208,34 @@
 % of each $d\phi_\ell$.
 % \end{quote}
 %
+% A key that is not printable text, such as |E_field|, needs a phrase in
+% the same way.
+% Without one \cs{eq} prints the key verbatim and, once the label exists,
+% warns.
+% To give a phrase to a line that already has a \cs{label}, add \cs{aka}
+% with the same key, |\label{E_field}\aka[$E$ field]{E_field}|, or replace
+% the \cs{label} with it.
+%
+% \subsection{How \cs{aka} behaves}
+%
 % Because \cs{label} is left alone, two \cs{label}s on one line remain the
-% error \textsf{amsmath} has always reported; only \cs{aka} adds
-% keys.
+% error \textsf{amsmath} has always reported; only \cs{aka} adds keys.
 % Citing a key with \cs{ref}, \cs{eqref}, \cs{pageref}, or the
 % \textsf{cleveref} command \cs{cref} works exactly as for a key given to
 % \cs{label}.
-% Outside a display \cs{aka} is simply \cs{label}, so it can also
-% give a section, a figure, or a theorem a second name.
-% In \textsf{beamer}, |\aka<|\meta{overlay}|>| passes the overlay to
-% \cs{label}, as |\label<|\meta{overlay}|>| does; in a display the
-% overlay of \cs{aka} or \cs{label} is dropped, and the label is on
-% every slide.
-% Put \cs{aka} in a heading or caption after its argument, not inside it,
-% when \textsf{nameref} is not loaded; with \textsf{nameref} (and so
-% \textsf{hyperref}) either place works.
+% Outside a display \cs{aka} is simply \cs{label}, so it can also give a
+% section, a figure, or a theorem a second name, and it may stand inside a
+% heading or caption just as \cs{label} may.
+% \cs{eq}, however, is for equations only, since it prints a parenthesized
+% number, and it warns when its key names anything else.
+%
 % On a line without a number, such as one with \cs{notag} or in
 % |equation*|, \cs{aka} is seldom what is wanted: in \textsf{align} it
 % labels the next numbered line, even one with its own \cs{label}, where
-% two \cs{label}s would be an error; put it on a numbered line.
-% \textsf{witharrows}' |DispWithArrows| is not supported.
-% \textsf{latexdiff} shows a changed \cs{eq} only when told that it is
-% safe to keep in deleted text, with |--append-safecmd=eq,eqcite|; do not
-% add |aka|, which would bring deleted labels back.
-% An \cs{aka} in text \textsf{latexdiff} marks as deleted is ignored.
-% \textsf{showkeys} and \textsf{showlabels} show the first key of a
-% display line, not the keys \cs{aka} adds to it.
-% The \textsf{iopart} class conflicts with \textsf{amsmath}, which this
-% package loads; it applies IOP's usual remedy, undefining |equation*|
-% first, when \textsf{iopart} is the class.
-% \cs{eq} is for equations only, since it prints a parenthesized number,
-% and it warns when its key names anything else.
-% In a heading that a class sets in capitals with \cs{MakeUppercase}, the
-% phrase is left as written, since it is printed from its key; give such a
-% heading a short form for the running head, as in
-% |\section[|\ldots|]{|\ldots|}|.
-% Classes that use the primitive \cs{uppercase}, such as \textsf{mnras}
-% and \textsf{aastex631}, capitalize the key itself, which breaks
-% \cs{eq} there as it breaks \cs{eqref}; wrap such a citation in a
-% command defined in the preamble.
+% two \cs{label}s would be an error.
+% Put it on a numbered line.
+%
+% \subsection{Long names}
 %
 % \DescribeMacro{\alsolabel}
 % \DescribeMacro{\eqcite}
@@ -264,54 +249,101 @@
 %
 % \section{Compatibility}
 %
-% The package works in the \textsf{amsmath} environments \textsf{equation},
-% \textsf{align}, \textsf{gather}, \textsf{multline}, \textsf{split} (with
-% the keys given in the enclosing \textsf{equation}), and
-% \textsf{subequations}, and in \textsf{empheq}.
-% It works with \textsf{hyperref} and \textsf{cleveref} loaded either
-% before or after it; it loads \textsf{amsmath} itself, which
-% \textsf{cleveref} still requires to be loaded before it.
+% \subsection{Requirements and loading}
+%
+% The package requires a \LaTeX\ format from 2021-11-15 or later, for the
+% hooks it uses, and loads \textsf{amsmath}.
 % Load \textsf{amsmath} with options, such as |fleqn|, before
 % \textsf{mermin}, as before any package that loads it.
-% It requires a \LaTeX\ format from 2021-11-15 or later, for the
-% hooks it uses.
+% \textsf{hyperref} and \textsf{cleveref} may be loaded before or after
+% \textsf{mermin}; \textsf{cleveref}, as always, after \textsf{amsmath}.
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
 % do not receive new packages, so a paper submitted there should include
 % \texttt{mermin.sty} among its files.
+%
+% \subsection{Displays}
+%
+% The package works in the \textsf{amsmath} environments \textsf{equation},
+% \textsf{align}, \textsf{gather}, \textsf{multline}, \textsf{split} (with
+% the keys given in the enclosing \textsf{equation}), and
+% \textsf{subequations}, and in \textsf{empheq}; in \textsf{breqn}'s
+% |dmath|, |dseries|, and |dgroup|; in the \textsf{cases} package's
+% |numcases| and |subnumcases|; in \textsf{IEEEtrantools}' |IEEEeqnarray|;
+% in \textsf{subeqnarray}; and in the kernel's \textsf{eqnarray}.
 % With the \textsf{mathtools} option |showonlyrefs|, a line is numbered
 % when any of its keys is cited.
-% \textsf{breqn}'s |dmath| and |dseries|, the \textsf{cases} package's
-% |numcases| and |subnumcases|, \textsf{IEEEtrantools}' |IEEEeqnarray|,
-% and the kernel's \textsf{eqnarray} are supported.
-% So are \textsf{xr} and \textsf{xr-hyper}: |\eq{S-|\meta{key}|}| cites an
+%
+% \subsection{Other documents}
+%
+% With \textsf{xr} or \textsf{xr-hyper}, |\eq{S-|\meta{key}|}| cites an
 % equation of a document loaded with |\externaldocument[S-]|, and prints
 % its phrase, or its key without the prefix; the |eq:| fallback reaches
 % it too, so |\eq{S-sum rule}| cites |\label{eq:sum rule}| there.
+% A document that does not use \textsf{mermin} has no record of which
+% labels are equations, so \cs{eq} treats all of its labels as equations.
 % Load \textsf{mermin} before calling \cs{externaldocument}: a document
 % read earlier is imported without its phrases or its record of which
 % labels are equations, so its keys print with the prefix, the |eq:|
 % fallback does not reach it, and \cs{eq} warns about every one.
+%
 % A paper that adopts \textsf{mermin} while \cs{includeonly} leaves out
 % chapters may see such warnings for equations in those chapters, until
 % each is compiled once with the package.
-% A document that does not use \textsf{mermin} has no record of which
-% labels are equations, so \cs{eq} treats all of them as equations.
-% \textsf{autonum} is not supported: it copies \cs{label} before this
-% package can attach its extra keys, and numbers a line by its first key only.
+%
+% \subsection{Headings, bookmarks, and running heads}
+%
 % \cs{aka}, like \cs{label}, vanishes from tables of contents, running
-% heads, and PDF bookmarks; in a bookmark \cs{eq} gives its phrase and
-% number as plain text.
+% heads, and PDF bookmarks.
+% In a bookmark \cs{eq} gives its phrase and number as plain text.
+% A phrase with mathematics is dropped from bookmarks, as mathematics is
+% from any bookmark; \textsf{hyperref}'s \cs{texorpdfstring} gives a
+% plain-text form, as in |\aka[\texorpdfstring{$E$}{E} field]{E_field}|.
+%
+% In a heading that a class sets in capitals with \cs{MakeUppercase}, the
+% phrase is left as written, since it is printed from its key; give such a
+% heading a short form for the running head, as in
+% |\section[|\ldots|]{|\ldots|}|.
+% Classes that use the primitive \cs{uppercase}, such as \textsf{mnras}
+% and \textsf{aastex631}, capitalize the key itself, which breaks
+% \cs{eq} there as it breaks \cs{eqref}; wrap such a citation in a
+% command defined in the preamble.
+%
+% \subsection{Classes and tools}
+%
+% In \textsf{beamer}, |\aka<|\meta{overlay}|>| passes the overlay to
+% \cs{label}, as |\label<|\meta{overlay}|>| does; in a display the overlay
+% of \cs{aka} or \cs{label} is dropped, and the label is on every slide.
+%
+% The \textsf{iopart} class conflicts with \textsf{amsmath}, which this
+% package loads; when \textsf{iopart} is the class, the package applies
+% IOP's usual remedy, undefining |equation*| first.
+%
+% \textsf{latexdiff} shows a changed \cs{eq} only when told that it is
+% safe to keep in deleted text, with |--append-safecmd=eq,eqcite|; do not
+% add |aka|, which would bring deleted labels back.
+% An \cs{aka} in text \textsf{latexdiff} marks as deleted is ignored.
+%
+% \textsf{showkeys} and \textsf{showlabels} show the first key of a display
+% line, not the keys \cs{aka} adds to it.
+%
+% \subsection{Not supported}
+%
+% \textsf{autonum} copies \cs{label} before this package can attach its
+% extra keys, and numbers a line by its first key only.
+% \textsf{witharrows}' |DispWithArrows| keeps its labels where \cs{aka}
+% cannot reach them.
+%
+% \section{Testing}
 %
 % The package's repository,
 % \url{https://github.com/evanberkowitz/mermin}, also holds a test suite
 % and the issue tracker.
 % Running |make test| there typesets every environment above, with the
-% keys given before, after, and instead of \cs{label}, in four package configurations, and checks that
-% each key in the resulting \texttt{.aux} file carries its line's number
-% and anchor.
-% It also checks the text \cs{eq} prints, that \cs{eq} warns exactly when
-% it cites something other than an equation, and that \cs{alsolabel} and
-% \cs{eqcite} take over when \cs{aka} and \cs{eq} are taken.
+% keys given before, after, and instead of \cs{label}, in four package
+% configurations, and checks that each key in the resulting \texttt{.aux}
+% file carries its line's number and anchor.
+% It also checks the text \cs{eq} prints, its warnings, and each of the
+% interactions above.
 % The suite runs with pdf\LaTeX, Lua\LaTeX, and Xe\LaTeX\ on the current
 % \TeX\ Live, and with pdf\LaTeX\ on \TeX\ Live 2021, 2023, and 2025.
 %
@@ -421,8 +453,9 @@
 % Three kinds of record travel through the \texttt{.aux} file, like
 % labels, so that a citation may come before its equation:
 % \begin{itemize}
-% \item |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}|, the typeset
-%   phrase given to \cs{alsolabel}, which defines |\mermin@ph@|\meta{key};
+% \item the typeset phrase given to \cs{alsolabel}, as |\mermin@newphrase|
+%   with the arguments \meta{key} and \meta{phrase}, which defines
+%   |\mermin@ph@|\meta{key};
 % \item |\mermin@equation{|\meta{key}|}|, which records that \meta{key}
 %   labels an equation, by defining |\mermin@eq@|\meta{key}, so that
 %   \cs{eqcite} can warn about anything else;
@@ -1003,8 +1036,8 @@
 %
 % \begin{macro}{\eqcite}
 % \begin{macro}{\mermin@cite}
-% \cs{eqcite} resolves its argument and passes the argument and the key to
-% |\mermin@cite|, which warns if the key is a label but not an equation,
+% \cs{eqcite} resolves its argument.
+% |\mermin@cite| receives the argument and the key; it warns if the key is a label but not an equation,
 % or if the argument and |eq:|\meta{argument} are both labels of different
 % equations (as when a revision adds |\aka{mass}| to one equation while an
 % older |\eq{mass}| meant |\label{eq:mass}| on another),
