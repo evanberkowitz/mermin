@@ -87,5 +87,6 @@ Copyright (C) 2026 Evan Berkowitz.
 
 This work may be distributed and/or modified under the conditions of the
 LaTeX Project Public License, version 1.3c or later
-(<https://www.latex-project.org/lppl.txt>). It has the LPPL maintenance
+(<https://www.latex-project.org/lppl.txt>), which is part of all
+distributions of LaTeX from 2008 on. It has the LPPL maintenance
 status "maintained"; the Current Maintainer is Evan Berkowitz.
