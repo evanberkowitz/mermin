@@ -1,0 +1,37 @@
+%% mermin.ins: run `tex mermin.ins' to generate mermin.sty from mermin.dtx.
+%%
+%% Copyright (C) 2026 Evan Berkowitz
+%%
+%% This work may be distributed and/or modified under the conditions of the
+%% LaTeX Project Public License, either version 1.3c of this license or (at
+%% your option) any later version.  The latest version of this license is in
+%%   https://www.latex-project.org/lppl.txt
+
+\input docstrip.tex
+\keepsilent
+\askforoverwritefalse
+\usedir{tex/latex/mermin}
+
+\preamble
+
+This is a generated file.  Edit mermin.dtx, not this file.
+
+Copyright (C) 2026 Evan Berkowitz
+
+This work may be distributed and/or modified under the conditions of the
+LaTeX Project Public License, either version 1.3c of this license or (at
+your option) any later version.  The latest version of this license is in
+  https://www.latex-project.org/lppl.txt
+
+\endpreamble
+
+\generate{\file{mermin.sty}{\from{mermin.dtx}{package}}}
+
+\obeyspaces
+\Msg{*************************************************************}
+\Msg{* To finish the installation, move mermin.sty into a       *}
+\Msg{* directory searched by TeX, e.g. TEXMFHOME/tex/latex/mermin.*}
+\Msg{* For the documentation run: pdflatex mermin.dtx (twice).   *}
+\Msg{*************************************************************}
+
+\endbatchfile

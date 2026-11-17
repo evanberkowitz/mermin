@@ -1,51 +1,84 @@
 # mermin
 
-LaTeX tools for writing equations the way N. David Mermin asks in
-"What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (October 1989),
+Tools for writing equations the way N. David Mermin asks in
+"What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (1989),
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
-## Mermin's rules
+Version 0.1, 2026/11/16.
 
-1. **Fisher's rule.** Number *every* displayed equation, whether or not the
-   text refers to it now. Readers, referees and later papers will.
-2. **The Good Samaritan rule.** When citing an equation, identify it by a
-   phrase as well as a number: "the anomaly condition (3)", never a bare
-   "(3)" or "Eq. (3) shows". An equation number is a locator, never a noun.
-   The same holds for citation numbers: "Berkowitz, Cherman, and Jacobson [1]"
-   or "Ref. [1]", not "of [1]".
-3. **The math-is-prose rule.** A display is part of its sentence: punctuate
-   it with commas and periods so the paragraph reads straight through.
+## Description
 
-## `\alsolabel`
+Mermin's Good Samaritan rule asks that every equation be cited by a noun
+phrase as well as its number: "the anomaly condition (3)", never a bare
+"(3)". The right phrase depends on why the equation is being cited, but
+amsmath allows a numbered line only one `\label`.
 
-The Good Samaritan rule asks for a noun phrase at every citation, and the
-right phrase changes with context. The same line can be "the anomaly
-condition" in one paragraph and "the 3450 condition" in another. amsmath
-allows one `\label` per numbered line. `\alsolabel{key}` adds more labels to
-the same line:
+`\alsolabel{key}` gives one equation, or one line of an `align`, as many
+labels as the prose needs, so every citation can carry a key that matches
+its phrase:
 
 ```latex
 \usepackage{mermin}
 ...
 \begin{equation}
-  L_1^2 + L_2^2 = R_1^2 + R_2^2
+  L_1^2+L_2^2=R_1^2+R_2^2.
   \label{eq:anomaly}
-  \alsolabel{eq:3450 condition}
+  \alsolabel{eq:pythagorean}
 \end{equation}
-... the anomaly condition~\eqref{eq:anomaly} ...
-... the 3450 condition~\eqref{eq:3450 condition} ...
+The 3450 model satisfies the anomaly condition~\eqref{eq:anomaly}.
+Read as a statement about integers, the same line is the Pythagorean
+condition~\eqref{eq:pythagorean}.
 ```
 
-- Use it any number of times per line, before or after `\label`, or with no
-  `\label` at all.
-- Every key gets the same number and hyperref anchor; `\ref`, `\eqref` and
-  `\cref` all work.
-- Works in `equation`, `align`, `gather`, `multline`, `split`,
-  `subequations` and `empheq`, with hyperref and cleveref, loaded in any
-  order. Outside a display it is plain `\label`.
-- `\label` is unchanged: two `\label`s on one line are still an error.
+`\alsolabel` may come before or after `\label`, any number of times, or
+replace it entirely. Every key gets the line's number and hyperref anchor,
+and `\ref`, `\eqref`, `\pageref` and `\cref` all work. It supports the
+amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
+`subequations`) and `empheq`, with hyperref and cleveref loaded in any
+order. `\label` itself is unchanged.
 
-## Tests
+The full documentation, including Mermin's three rules and the
+annotated implementation, is `mermin.pdf`.
 
-`make -C test` builds four package configurations and checks that every key
-in `test/alsolabel-body.tex` resolves to its line's number and anchor.
+## Files
+
+| File         | Contents                                                     |
+|--------------|--------------------------------------------------------------|
+| `mermin.dtx` | Documented source: user manual and implementation            |
+| `mermin.ins` | Installer: generates `mermin.sty` from `mermin.dtx`          |
+| `mermin.sty` | The package (generated; not in the repository)               |
+| `mermin.pdf` | The manual (generated; not in the repository)                |
+| `test/`      | Test suite for `\alsolabel`                                  |
+
+## Installation
+
+```sh
+make            # tex mermin.ins, then pdflatex mermin.dtx with its indexes
+```
+
+Then either copy `mermin.sty` to `$(kpsewhich -var-value TEXMFHOME)/tex/latex/mermin/`,
+or point a paper's build at this directory with `TEXINPUTS=/path/to/mermin:`.
+Without make, run `tex mermin.ins` for the package and `pdflatex mermin.dtx`
+twice for the manual.
+
+Requires a LaTeX format from 2020-10-01 or later, and amsmath.
+
+## Testing
+
+```sh
+make test
+```
+
+typesets every supported environment, with the keys in every order, in four
+package configurations (amsmath alone; with hyperref; with hyperref and
+cleveref; with mermin loaded first), and checks that every key in each
+`.aux` file resolves to its line's number and anchor.
+
+## License
+
+Copyright (C) 2026 Evan Berkowitz.
+
+This work may be distributed and/or modified under the conditions of the
+LaTeX Project Public License, version 1.3c or later
+(<https://www.latex-project.org/lppl.txt>). It has the LPPL maintenance
+status "maintained"; the Current Maintainer is Evan Berkowitz.

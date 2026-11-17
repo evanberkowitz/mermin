@@ -1,0 +1,412 @@
+% \iffalse meta-comment
+%
+% Copyright (C) 2026 Evan Berkowitz
+%
+% This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at
+% your option) any later version.  The latest version of this license is in
+%   https://www.latex-project.org/lppl.txt
+%
+% This work has the LPPL maintenance status `maintained'.
+% The Current Maintainer of this work is Evan Berkowitz.
+% This work consists of the files mermin.dtx and mermin.ins and the derived
+% file mermin.sty.
+%
+% \fi
+%
+% \iffalse
+%<*driver>
+\ProvidesFile{mermin.dtx}
+%</driver>
+%<package>\NeedsTeXFormat{LaTeX2e}[2020/10/01]
+%<package>\ProvidesPackage{mermin}
+%<*package>
+    [2026/11/16 v0.1 Mermin-style equation tools]
+%</package>
+%
+%<*driver>
+\documentclass{ltxdoc}
+\usepackage{amsmath}
+\usepackage{mermin}
+\usepackage[hidelinks]{hyperref}
+\EnableCrossrefs
+\CodelineIndex
+\RecordChanges
+\begin{document}
+  \DocInput{mermin.dtx}
+  \PrintChanges
+  \PrintIndex
+\end{document}
+%</driver>
+% \fi
+%
+% \CheckSum{0}
+%
+% \changes{v0.1}{2026/11/16}{Initial version, providing \cs{alsolabel}.}
+%
+% \GetFileInfo{mermin.sty}
+%
+% \DoNotIndex{\begingroup,\endgroup,\def,\gdef,\let,\global,\else,\fi}
+% \DoNotIndex{\ifx,\ifdefined,\expandafter,\noexpand,\unexpanded,\xdef}
+% \DoNotIndex{\newcommand,\newif,\label,\do,\the,\toks@,\@xp,\@empty}
+% \DoNotIndex{\AddToHook,\NeedsTeXFormat,\ProvidesPackage,\RequirePackage}
+% \DoNotIndex{\@ifnextchar,\endinput}
+%
+% \title{The \textsf{mermin} package\thanks{This document corresponds to
+%   \textsf{mermin}~\fileversion, dated \filedate.}}
+% \author{Evan Berkowitz}
+% \date{\filedate}
+%
+% \maketitle
+%
+% \begin{abstract}
+% The \textsf{mermin} package helps physicists write equations the way
+% N.~David Mermin asks in ``What's Wrong with These Equations?''\
+% \cite{mermin}.
+% Its first tool, \cs{alsolabel}, gives one numbered equation, or one line
+% of an \textsf{align}, as many labels as the prose needs, so that every
+% citation of that equation can carry a key that matches the noun phrase
+% used to cite it.
+% \end{abstract}
+%
+% \section{Introduction}
+%
+% In his 1989 column~\cite{mermin} Mermin proposed three rules for
+% equations in physics writing.
+% Fisher's rule asks that every displayed equation be numbered, whether or
+% not the text refers to it yet, because readers, referees and later papers
+% will.
+% The Good Samaritan rule asks that an equation be cited by a phrase as well
+% as a number, so that the reader need not page back to learn what
+% ``(11)'' says: one writes ``the anomaly condition~(11)'', never a bare
+% ``(11)'' and never ``Eq.~(11) shows''.
+% An equation number locates; the noun phrase says what is there.
+% The third rule, that mathematics is prose, asks that a display be
+% punctuated as part of its sentence, so that the paragraph reads straight
+% through the equation.
+%
+% The Good Samaritan rule has a cost that \LaTeX\ makes worse than it need
+% be.
+% The right phrase for an equation depends on why it is being cited.
+% The same line may be ``the anomaly condition'' in one paragraph and
+% ``the Pythagorean condition'' in another, yet \textsf{amsmath} allows a
+% numbered line exactly one \cs{label}.
+% The key then names only one of the roles, and the source no longer says
+% what the author meant at each citation.
+% The \cs{alsolabel} command removes this restriction without changing
+% \cs{label}.
+%
+% \section{Usage}
+%
+% \DescribeMacro{\alsolabel}
+% Load the package with |\usepackage{mermin}|.
+% Then |\alsolabel{|\meta{key}|}| attaches \meta{key} to the current
+% equation, or to the current line of a multi-line display, in addition
+% to its \cs{label}.
+% It may be used any number of times on a line, before or after the
+% \cs{label}, or on a line that has no \cs{label} at all.
+% Every key refers to the same number and, with \textsf{hyperref}, to the
+% same anchor.
+% Consider two-flavor chiral gauge theories whose gauge anomaly cancels
+% when the left- and right-handed charges obey
+% \begin{equation}
+%   L_1^2+L_2^2=R_1^2+R_2^2.
+%   \label{eq:anomaly}
+%   \alsolabel{eq:pythagorean}
+% \end{equation}
+% The source of this display reads
+% \begin{verbatim}
+% \begin{equation}
+%   L_1^2+L_2^2=R_1^2+R_2^2.
+%   \label{eq:anomaly}
+%   \alsolabel{eq:pythagorean}
+% \end{equation}
+%
+% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies the anomaly
+% condition~\eqref{eq:anomaly}.
+% Read as a statement about integers, the same line is the Pythagorean
+% condition~\eqref{eq:pythagorean}, and $3^2+4^2=5^2$ is its smallest
+% nontrivial solution.
+% \end{verbatim}
+% which gives each citation a key that matches its phrase and typesets as
+% \begin{quote}
+% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies the anomaly
+% condition~\eqref{eq:anomaly}.
+% Read as a statement about integers, the same line is the Pythagorean
+% condition~\eqref{eq:pythagorean}, and $3^2+4^2=5^2$ is its smallest
+% nontrivial solution.
+% \end{quote}
+%
+% Lines of an \textsf{align} are labeled the same way, one set of keys per
+% line, and a line may be labeled by \cs{alsolabel} alone:
+% \begin{verbatim}
+% \begin{align}
+%   a &= b  \label{eq:first} \alsolabel{eq:first-again} \\
+%   c &= d  \alsolabel{eq:second}
+% \end{align}
+% \end{verbatim}
+% Outside a display \cs{alsolabel} is simply \cs{label}, so it can also
+% give a section or a figure a second name.
+%
+% Because \cs{label} is left alone, two \cs{label}s on one line remain the
+% error \textsf{amsmath} has always reported; only \cs{alsolabel} adds
+% keys.
+% Citing a key with \cs{ref}, \cs{eqref}, \cs{pageref} or the
+% \textsf{cleveref} command \cs{cref} works exactly as for a key given to
+% \cs{label}.
+%
+% \section{Compatibility}
+%
+% The package works in the \textsf{amsmath} environments \textsf{equation},
+% \textsf{align}, \textsf{gather}, \textsf{multline}, \textsf{split} (with
+% the keys given in the enclosing \textsf{equation}) and
+% \textsf{subequations}, and in \textsf{empheq}.
+% It works with \textsf{hyperref} and \textsf{cleveref} loaded either
+% before or after it.
+% It requires a \LaTeX\ format from 2020-10-01 or later, for the
+% |begindocument/end| hook.
+% The \textsf{mathtools} option |showonlyrefs| has not been tested.
+%
+% The repository that holds this package also holds a test suite.
+% Running |make test| typesets every environment above, with the keys
+% given in every order, in four package configurations, and checks that
+% each key in the resulting \texttt{.aux} file carries its line's number
+% and anchor.
+%
+% \begin{thebibliography}{1}
+% \bibitem{mermin}
+%   N.~D. Mermin, ``What's wrong with these equations?'',
+%   \emph{Physics Today} \textbf{42}(10), 9 (1989),
+%   \href{https://doi.org/10.1063/1.2811173}{doi:10.1063/1.2811173}.
+% \end{thebibliography}
+%
+% \StopEventually{}
+%
+% \section{Implementation}
+%
+% \textsf{amsmath} does not write a display label when it meets \cs{label}.
+% It stores the key in |\df@label| and writes it with
+% |\ltx@label{|\meta{contents of \texttt{\char`\\df@label}}|}| once the
+% line's tag, and so |\@currentlabel| and the \textsf{hyperref} anchor, are
+% known.
+% The package keeps the extra keys of a line in a queue and writes them
+% immediately after that primary label, so they receive the same number and
+% anchor.
+%
+% Three complications shape the code.
+% First, \textsf{cleveref} stores keys in a different form, wrapping the key
+% in braces or preceding it with an optional argument, so every queued key
+% is stored in exactly the form |\label@in@display| would have stored it.
+% Second, \textsf{amsmath} and \textsf{empheq} typeset some displays twice,
+% once to measure them, and may discard a primary label without writing it.
+% The queue is therefore tagged with the primary label it belongs to and
+% written only when that label is, and a key is never queued twice.
+% Third, \cs{alsolabel} may come before \cs{label} or without it.
+% It then occupies |\df@label| itself, and a later \cs{label} reclaims the
+% slot and moves the earlier key into the queue.
+%
+%    \begin{macrocode}
+%<*package>
+\RequirePackage{amsmath}
+%    \end{macrocode}
+%
+% \begin{macro}{\mermin@queue}
+% \begin{macro}{\mermin@tag}
+% \begin{macro}{\mermin@promoted}
+% The queue holds extra keys as |\do{|\meta{stored form}|}|.
+% The tag is the |\df@label| the queue belongs to.
+% |\mermin@promoted| is nonempty when \cs{alsolabel} occupies |\df@label|
+% because no \cs{label} has come yet.
+%    \begin{macrocode}
+\gdef\mermin@queue{}
+\gdef\mermin@tag{}
+\gdef\mermin@promoted{}
+\newif\ifmermin@also
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\alsolabel}
+% The user command calls whatever \cs{label} means at that point, with a
+% flag raised.
+% The measuring passes of \textsf{amsmath} gobble or defer \cs{label}, and
+% \cs{alsolabel} thereby inherits the same treatment.
+% In a display \cs{label} is |\label@in@display|, which the package wraps
+% below to read the flag.
+% \textsf{cleveref}'s measuring pass for \textsf{multline} skips
+% |\label@in@display| and calls \textsf{amsmath}'s original, saved as
+% |\cref@old@label@in@display|, directly with the stored form of the key;
+% that hook is redirected as well.
+%    \begin{macrocode}
+\newcommand\alsolabel[1]{%
+  \begingroup
+    \mermin@alsotrue
+    \ifdefined\mermin@cref@old
+      \let\cref@old@label@in@display\mermin@also@stored
+    \fi
+    \label{#1}%
+  \endgroup}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@call@orig}
+% This calls the |\label@in@display| that was in force before the package
+% wrapped it, with \textsf{cleveref}'s inner hook restored.
+% The argument is the complete argument list, braces included.
+%    \begin{macrocode}
+\def\mermin@call@orig#1{%
+  \begingroup
+    \ifdefined\mermin@cref@old
+      \let\cref@old@label@in@display\mermin@cref@old
+    \fi
+    \mermin@orig@label@in@display#1%
+  \endgroup}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@canonical}
+% This sets |\mermin@form| to the form in which |\label@in@display| would
+% store the key |#1|, by letting it store the key into an emptied
+% |\df@label| and restoring the old contents afterwards.
+%    \begin{macrocode}
+\def\mermin@canonical#1{%
+  \global\let\mermin@saved\df@label
+  \global\let\df@label\@empty
+  \mermin@call@orig{{#1}}%
+  \global\let\mermin@form\df@label
+  \global\let\df@label\mermin@saved
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@enqueue}
+% This queues |\mermin@form| for the current |\df@label|.
+% A queue tagged with a different label is stale and is discarded first.
+% A form already in the queue is skipped, because a display typeset twice
+% runs its \cs{alsolabel}s twice.
+%    \begin{macrocode}
+\def\mermin@enqueue{%
+  \ifx\mermin@tag\df@label\else
+    \gdef\mermin@queue{}%
+    \global\let\mermin@tag\df@label
+  \fi
+  \begingroup
+    \let\mermin@found\@empty
+    \def\do##1{\def\mermin@tmp{##1}%
+      \ifx\mermin@tmp\mermin@form \def\mermin@found{x}\fi}%
+    \mermin@queue
+    \ifx\mermin@found\@empty
+      \toks@\@xp{\mermin@form}%
+      \xdef\mermin@queue{%
+        \unexpanded\@xp{\mermin@queue}\noexpand\do{\the\toks@}}%
+    \fi
+  \endgroup
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@also@in@display}
+% \begin{macro}{\mermin@also@stored}
+% \cs{alsolabel} in a display converts its key to stored form.
+% If the line has no label yet, the key becomes the primary label and is
+% marked as promoted; otherwise it is queued.
+%    \begin{macrocode}
+\def\mermin@also@in@display#1{%
+  \mermin@canonical{#1}%
+  \@xp\mermin@also@stored\@xp{\mermin@form}%
+}
+\def\mermin@also@stored#1{%
+  \ifx\df@label\@empty
+    \gdef\df@label{#1}%
+    \global\let\mermin@promoted\df@label
+    \global\let\mermin@tag\df@label
+    \gdef\mermin@queue{}%
+  \else
+    \gdef\mermin@form{#1}%
+    \mermin@enqueue
+  \fi
+}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\mermin@real@in@display}
+% A real \cs{label} normally passes straight through, and so still reports
+% a second \cs{label} on one line as an error.
+% If instead the line's primary label was promoted from \cs{alsolabel}, the
+% real key takes the slot and the promoted key joins the queue.
+% A promotion left over from a discarded measuring pass no longer matches
+% |\df@label| and is cleared.
+%    \begin{macrocode}
+\def\mermin@real@in@display#1{%
+  \ifx\mermin@promoted\@empty
+    \mermin@call@orig{#1}%
+  \else\ifx\mermin@promoted\df@label
+    \global\let\mermin@form\df@label
+    \ifx\mermin@tag\df@label\else\gdef\mermin@queue{}\fi
+    \global\let\df@label\@empty
+    \mermin@call@orig{#1}%
+    \global\let\mermin@tag\df@label
+    \mermin@enqueue
+    \gdef\mermin@promoted{}%
+  \else
+    \gdef\mermin@promoted{}%
+    \mermin@call@orig{#1}%
+  \fi\fi
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@label@in@display}
+% A real \cs{label} in a display arrives here, with \textsf{cleveref}'s
+% optional argument passed through untouched.
+%    \begin{macrocode}
+\def\mermin@label@in@display{%
+  \@ifnextchar[\mermin@label@in@display@opt\mermin@label@in@display@noarg}
+\def\mermin@label@in@display@opt[#1]#2{\mermin@real@in@display{[#1]{#2}}}
+\def\mermin@label@in@display@noarg#1{\mermin@real@in@display{{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ltx@label}
+% \begin{macro}{\label@in@display}
+% \textsf{hyperref} and \textsf{cleveref} install their own |\ltx@label|
+% and |\label@in@display| in |\AtBeginDocument| code.
+% The package wraps them in the |begindocument/end| hook, which runs after
+% all such code, so that load order does not matter.
+% The new |\ltx@label| writes the primary label as before and then, if
+% the queue belongs to it, every queued key.
+% The new |\label@in@display| sends \cs{alsolabel} and \cs{label} their
+% separate ways.
+%    \begin{macrocode}
+\AddToHook{begindocument/end}{%
+  \let\mermin@ltx@label\ltx@label
+  \def\ltx@label#1{%
+    \mermin@ltx@label{#1}%
+    \def\mermin@tmp{#1}%
+    \ifx\mermin@tmp\mermin@tag
+      \begingroup
+        \let\do\mermin@ltx@label
+        \mermin@queue
+      \endgroup
+      \gdef\mermin@queue{}\gdef\mermin@tag{}\gdef\mermin@promoted{}%
+    \fi}%
+  \let\mermin@orig@label@in@display\label@in@display
+  \ifdefined\cref@old@label@in@display
+    \let\mermin@cref@old\cref@old@label@in@display
+  \fi
+  \def\label@in@display{%
+    \ifmermin@also
+      \expandafter\mermin@also@in@display
+    \else
+      \expandafter\mermin@label@in@display
+    \fi}%
+}
+%</package>
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \Finale
+\endinput
