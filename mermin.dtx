@@ -324,9 +324,13 @@
 % \end{macro}
 %
 % \begin{macro}{\alsolabel}
-% Where \LaTeX\ disables \cs{label} by making it |\@gobble| or |\relax|,
-% as it does in the text written to a table of contents or a running head,
-% \cs{alsolabel} disappears with it, together with its arguments.
+% Where \LaTeX\ disables \cs{label}, as it does in the text written to a
+% table of contents or a running head, \cs{alsolabel} disappears with it,
+% together with its arguments.
+% Releases before 2025-06-01 make \cs{label} |\@gobble| or |\relax|
+% there; later ones make it |\@gobble@om|, or
+% |\@gobble@with@sphack@om| where it is typeset, and \cs{alsolabel} then
+% uses that command itself.
 % It is therefore expandable, and only chooses between that and the real
 % command, |\mermin@alsolabel|, which is robust.
 % The real command calls whatever \cs{label} means at that point, with a
@@ -346,13 +350,13 @@
 % |\@bsphack| and |\@esphack|.
 %    \begin{macrocode}
 \def\alsolabel{%
-  \ifx\label\@gobble
-    \@xp\mermin@gobble@aka
-  \else\ifx\label\relax
-    \@xp\@xp\@xp\mermin@gobble@aka
-  \else
-    \@xp\@xp\@xp\mermin@alsolabel
-  \fi\fi}
+  \ifx\label\@gobble \mermin@aka@use\mermin@gobble@aka\fi
+  \ifx\label\relax \mermin@aka@use\mermin@gobble@aka\fi
+  \ifx\label\@gobble@om \mermin@aka@use\mermin@gobble@aka\fi
+  \ifx\label\@gobble@with@sphack@om
+    \mermin@aka@use\@gobble@with@sphack@om\fi
+  \mermin@alsolabel}
+\def\mermin@aka@use#1#2\mermin@alsolabel{\fi#1}
 \NewExpandableDocumentCommand\mermin@gobble@aka{o m}{}
 \NewDocumentCommand\mermin@alsolabel{o m}{%
   \@bsphack
