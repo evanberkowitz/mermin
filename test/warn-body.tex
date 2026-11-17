@@ -6,6 +6,13 @@
 \end{subequations}
 \begin{multline} c \\ = d \label{long one} \alsolabel{long alias} \end{multline}
 \begin{figure}\caption{x}\label{a figure}\end{figure}
+% TeX Live 2026 writes some float labels through amsmath's \ltx@label; imitate
+% that where \ltx@label takes a bare key, i.e. without cleveref.
+\ifdefined\crefname\else
+\begin{figure}\caption{z}\expandafter\let\expandafter\label\csname ltx@label\endcsname\label{figure via ltx label}\end{figure}
+\fi
+\begin{table}\caption{y}\begin{tabular}{p{3cm}}x\label{table in a p column}\end{tabular}\end{table}
 \EQ{good equation} \EQ{good alias} \EQ{group} \EQ{first member} \EQ{second member}
 \EQ{long one} \EQ{long alias}
 WARN: \EQ{the section} \EQ{other section name} \EQ{a figure}
+\EQ{table in a p column} \ifdefined\crefname\else\EQ{figure via ltx label}\fi

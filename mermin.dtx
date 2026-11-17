@@ -363,34 +363,23 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\mermin@keyof}
-% Display labels reach |\ltx@label| in stored form.
-% This sets |\mermin@rawkey| to the key inside it: the form itself without
-% \textsf{cleveref}, and otherwise the braced group of |{|\meta{key}|}| or
-% |[|\meta{type}|]{|\meta{key}|}|.
+% \begin{macro}{\mermin@markargs}
+% Keys are recorded as equations where an \textsf{amsmath} display
+% registers them, in |\label@in@display|, and not where labels are
+% written: |\ltx@label|, which writes them, can also be reached from
+% outside a display.
+% A key arrives as |{|\meta{key}|}|, as |[|\meta{type}|]{|\meta{key}|}| with
+% \textsf{cleveref}'s optional argument, or, without \textsf{cleveref}, as
+% \textsf{amsmath} stores it, the bare \meta{key}.
+% |\mermin@markargs| records the key in any of these forms.
 %    \begin{macrocode}
-\def\mermin@keyof#1{%
-  \ifdefined\mermin@cref@old
-    \mermin@keyof@cref#1\mermin@nil
-  \else
-    \def\mermin@rawkey{#1}%
-  \fi}
-\def\mermin@keyof@cref{%
+\def\mermin@markargs#1{%
+  \mermin@keyof#1\mermin@nil
+  \@xp\mermin@markeq\@xp{\mermin@rawkey}}
+\def\mermin@keyof{%
   \@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
 \def\mermin@keyof@plain#1\mermin@nil{\def\mermin@rawkey{#1}}
 \def\mermin@keyof@opt[#1]#2\mermin@nil{\def\mermin@rawkey{#2}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\mermin@write@display@label}
-% Every display label, primary or queued, is written by this macro, which
-% also records its key as an equation.
-%    \begin{macrocode}
-\def\mermin@write@display@label#1{%
-  \mermin@ltx@label{#1}%
-  \mermin@keyof{#1}%
-  \@xp\mermin@markeq\@xp{\mermin@rawkey}%
-}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -410,10 +399,12 @@
 %
 % \begin{macro}{\mermin@call@orig}
 % This calls the |\label@in@display| that was in force before the package
-% wrapped it, with \textsf{cleveref}'s inner hook restored.
+% wrapped it, with \textsf{cleveref}'s inner hook restored, and records the
+% key as an equation.
 % The argument is the complete argument list, braces included.
 %    \begin{macrocode}
 \def\mermin@call@orig#1{%
+  \mermin@markargs{#1}%
   \begingroup
     \ifdefined\mermin@cref@old
       \let\cref@old@label@in@display\mermin@cref@old
@@ -475,6 +466,7 @@
   \@xp\mermin@also@stored\@xp{\mermin@form}%
 }
 \def\mermin@also@stored#1{%
+  \mermin@markargs{#1}%
   \ifx\df@label\@empty
     \gdef\df@label{#1}%
     \global\let\mermin@promoted\df@label
@@ -541,11 +533,11 @@
 \AddToHook{begindocument/end}{%
   \let\mermin@ltx@label\ltx@label
   \def\ltx@label#1{%
-    \mermin@write@display@label{#1}%
+    \mermin@ltx@label{#1}%
     \def\mermin@tmp{#1}%
     \ifx\mermin@tmp\mermin@tag
       \begingroup
-        \let\do\mermin@write@display@label
+        \let\do\mermin@ltx@label
         \mermin@queue
       \endgroup
       \gdef\mermin@queue{}\gdef\mermin@tag{}\gdef\mermin@promoted{}%
@@ -553,6 +545,9 @@
   \let\mermin@orig@label@in@display\label@in@display
   \ifdefined\cref@old@label@in@display
     \let\mermin@cref@old\cref@old@label@in@display
+    % cleveref's multline trial pass calls this directly; record its keys.
+    \def\cref@old@label@in@display#1{%
+      \mermin@markargs{#1}\mermin@cref@old{#1}}%
   \fi
   \def\label@in@display{%
     \ifmermin@also
