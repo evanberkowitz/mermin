@@ -262,6 +262,34 @@
 % or \cs{Cref} cites an equation by number alone; \cs{eq} does both.
 % The options |nofisher| and |nosamaritan| turn the warnings off.
 %
+% The warnings appear in the log file, and in the summaries of tools such
+% as \texttt{latexmk}, like this:
+% \begingroup
+% \def\MacroFont{\footnotesize\ttfamily}
+% \begin{verbatim}
+% Package mermin Warning: `equation*' display without a number.
+% (mermin)                Fisher's rule: number every displayed equation
+% (mermin)                (option nofisher silences this) on input line 4.
+%
+% Package mermin Warning: Equation `chain' is cited by number alone.
+% (mermin)                Good Samaritan rule: name it too, as \eq does
+% (mermin)                (option nosamaritan silences this) on input line 12.
+% \end{verbatim}
+% \endgroup
+% The first names the environment (|\[|\ldots|\]| is |equation*|) and
+% the line where the display ends; the second names the key and the line
+% of the citation.
+% With |showonlyrefs| a single warning appears at |\begin{document}|:
+% \begingroup
+% \def\MacroFont{\footnotesize\ttfamily}
+% \begin{verbatim}
+% Package mermin Warning: mathtools' showonlyrefs numbers only the equations
+% (mermin)                that are cited, which Mermin calls Occam's rule;
+% (mermin)                Fisher's rule numbers them all (option nofisher
+% (mermin)                silences this).
+% \end{verbatim}
+% \endgroup
+%
 % \subsection{Long names}
 %
 % \DescribeMacro{\alsolabel}
@@ -1436,15 +1464,15 @@
 %    \begin{macrocode}
 \newif\ifmermin@numbered
 \def\mermin@fisher@begin{\global\mermin@numberedfalse}
-\def\mermin@fisher@after{%
+\def\mermin@fisher@after#1{%
   \ifmermin@numbered\else\ifmermin@deleted\else
-    \PackageWarning{mermin}{Display without a number.\MessageBreak
+    \PackageWarning{mermin}{`#1' display without a number.\MessageBreak
       Fisher's rule: number every displayed equation\MessageBreak
       (option nofisher silences this)}%
   \fi\fi}
 \def\mermin@fisherenv#1{%
   \AddToHook{env/#1/begin}{\mermin@fisher@begin}%
-  \AddToHook{env/#1/after}{\mermin@fisher@after}}
+  \AddToHook{env/#1/after}{\mermin@fisher@after{#1}}}
  % Installed by a macro of its own: skipped by \ifmermin@fisher, the
  % \else and \fi of the showonlyrefs test would end that \if early.
 \def\mermin@fisher@install{%
@@ -1453,10 +1481,11 @@
     \@ifundefined{MH_if_boolean_show_only_refs:}{\@secondoftwo}%
       {\csname MH_if_boolean_show_only_refs:\endcsname
          \@xp\@firstoftwo\else\@xp\@secondoftwo\fi}%
-      {\PackageWarningNoLine{mermin}{mathtools' showonlyrefs numbers only
-         the equations\MessageBreak that are cited, which Mermin calls
-         Occam's rule;\MessageBreak Fisher's rule numbers them all
-         (option nofisher\MessageBreak silences this)}}%
+      {\PackageWarningNoLine{mermin}{mathtools' showonlyrefs
+         numbers only the equations\MessageBreak
+         that are cited, which Mermin calls Occam's rule;\MessageBreak
+         Fisher's rule numbers them all (option nofisher\MessageBreak
+         silences this)}}%
       {\let\mermin@maketag\maketag@@@
        \def\maketag@@@{\global\mermin@numberedtrue\mermin@maketag}%
        \let\mermin@eqnnum\@eqnnum

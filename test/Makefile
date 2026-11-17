@@ -99,6 +99,7 @@ check:
 	@# do not; the options silence both.
 	@for c in rules rules-off; do rm -f $$c.aux; for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; done
 	@grep -c "Fisher's rule" rules.log | grep -qx 3 || { echo "rules: expected three Fisher warnings"; exit 1; }
+	@grep -q "Warning: .equation\*' display without a number" rules.log && grep -q "Warning: .align' display without a number" rules.log || { echo "rules: Fisher warnings do not name the environment"; exit 1; }
 	@grep -c 'cited by number' rules.log | grep -qx 2 || { echo "rules: expected two Good Samaritan warnings"; exit 1; }
 	@! grep -q 'mermin Warning' rules-off.log || { echo "rules-off: options did not silence the rules"; exit 1; }
 	@! grep -q 'Token not allowed' rules.log || { echo "rules: bookmark warnings"; exit 1; }
