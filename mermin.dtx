@@ -263,6 +263,10 @@
 % equation of a document loaded with |\externaldocument[S-]|, and prints
 % its phrase, or its key without the prefix; the |eq:| fallback reaches
 % it too, so |\eq{S-sum rule}| cites |\label{eq:sum rule}| there.
+% Load \textsf{mermin} before calling \cs{externaldocument}: a document
+% read earlier is imported without its phrases.
+% A document that does not use \textsf{mermin} has no record of which
+% labels are equations, so \cs{eq} treats all of them as equations.
 % \textsf{autonum} is not supported: it copies \cs{label} before this
 % package can attach its extra keys, and numbers a line by its first key only.
 % \cs{aka}, like \cs{label}, vanishes from tables of contents, running
@@ -475,7 +479,8 @@
     \immediate\write\@auxout{%
       \string\providecommand\string\mermin@equation[1]{}}%
     \immediate\write\@auxout{%
-      \string\providecommand\string\mermin@auxmark{}\string\mermin@auxmark}%
+      \string\providecommand\string\mermin@auxmark{}}%
+    \immediate\write\@auxout{\string\mermin@auxmark}%
   \fi}
 \def\mermin@auxmark{\global\let\mermin@marked\@empty}
 \AddToHook{include/before}{%
@@ -502,16 +507,24 @@
 \long\def\mermin@xr@test#1#2#3#4\XR@{%
   \ifdefined\eq\else\let\eq\eqcite\fi
   \ifdefined\aka\else\let\aka\alsolabel\fi
-  \ifx#1\mermin@equation
-    \@xp\gdef\csname mermin@eq@\XR@prefix#2\endcsname{}%
-    \def\mermin@xr@key{#2}%
-    \mermin@xr@eqsplit\relax#2\mermin@stop eq:\mermin@stop\mermin@nil
-    \@xp\xdef\csname mermin@xrdef@\XR@prefix#2\endcsname
-      {\unexpanded\@xp{\mermin@xr@rest}}%
+  \ifx#1\mermin@auxmark
+    \def\mermin@xr@marked{}%
+  \else\ifx#1\mermin@equation
+    \mermin@xr@import{#2}%
   \else\ifx#1\mermin@newphrase
     \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
-  \fi\fi
+  \else\ifx#1\newlabel
+    % A document without mermin records no equations: treat its labels
+    % as equations rather than warn about every one.
+    \ifdefined\mermin@xr@marked\else\mermin@xr@import{#2}\fi
+  \fi\fi\fi\fi
   \mermin@xr@orig#1{#2}{#3}#4\XR@}
+\def\mermin@xr@import#1{%
+  \@xp\gdef\csname mermin@eq@\XR@prefix#1\endcsname{}%
+  \def\mermin@xr@key{#1}%
+  \mermin@xr@eqsplit\relax#1\mermin@stop eq:\mermin@stop\mermin@nil
+  \@xp\xdef\csname mermin@xrdef@\XR@prefix#1\endcsname
+    {\unexpanded\@xp{\mermin@xr@rest}}}
 \def\mermin@xr@eqsplit#1eq:#2\mermin@stop#3\mermin@nil{%
   \def\mermin@tmp{#1}%
   \ifx\mermin@tmp\mermin@relax
@@ -576,6 +589,7 @@
 \AddToHook{env/subequations/begin}{\mermin@marklabels}
 \AddToHook{env/dmath/begin}{\mermin@marklabels}
 \AddToHook{env/dseries/begin}{\mermin@marklabels}
+\AddToHook{env/dgroup/begin}{\mermin@marklabels}
 \AddToHook{env/eqnarray/begin}{\mermin@marklabels}
 \AddToHook{env/numcases/begin}{\mermin@marklabels}
 \AddToHook{env/subnumcases/begin}{\mermin@marklabels}
@@ -761,7 +775,8 @@
     \def\mermin@tmp{#1}%
     \ifx\mermin@tmp\mermin@tag
       \begingroup
-        \let\do\mermin@ltx@label
+        \def\do##1{\def\mermin@tmp{##1}%
+          \ifx\mermin@tmp\mermin@tag\else\mermin@ltx@label{##1}\fi}%
         \mermin@queue
       \endgroup
       \gdef\mermin@queue{}\gdef\mermin@tag{}\gdef\mermin@promoted{}%
@@ -816,10 +831,16 @@
            {\@xp\let\@xp\mermin@text
               \csname mermin@xrdef@\mermin@key\endcsname}%
          \@xp\mermin@ifunprintable\@xp{\mermin@text}%
-           {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
-              text,\MessageBreak so it is printed verbatim; give the line
-              \MessageBreak\mermin@akacs[\mermin@phrasemeta]{\mermin@key}\space
-              beside its\MessageBreak\string\label{\mermin@key}}%
+           {\@ifundefined{mermin@xrdef@\mermin@key}%
+              {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
+                 text,\MessageBreak so it is printed verbatim; give the line
+                 \MessageBreak
+                 \mermin@akacs[\mermin@phrasemeta]{\mermin@key}\space
+                 beside its\MessageBreak\string\label{\mermin@key}}}%
+              {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
+                 text,\MessageBreak so it is printed verbatim; give it a
+                 phrase in the\MessageBreak document that defines
+                 `\mermin@text'}}%
             \@xp\mermin@verbatim\@xp{\mermin@text}}%
            {\mermin@text}}}%
      {\csname mermin@ph@\mermin@key\endcsname}%

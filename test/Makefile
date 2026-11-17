@@ -44,18 +44,19 @@ check:
 	@pdftotext rerun-edit.pdf - | grep -q 'K (1)' || { echo "rerun: the removed phrase was still printed"; exit 1; }
 	@printf '%s\n' 'rerun checks pass'
 	@# xr and xr-hyper import phrases and equation keys from another document.
-	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error xr-supp >/dev/null || { echo "xr-supp: LaTeX error"; exit 1; }; done
+	@for c in xr-supp xr-plain; do for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; done
 	@for c in xr-before xr-after; do \
 	  for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
-	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
+	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t and 'XRP: gauss (1); sum rule (2).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
 	  ! grep -q 'not an equation\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
-	  grep -q "S-E_field' has no typeset phrase" $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
+	  grep -q "S-E_field' has no typeset phrase" $$c.log && grep -q 'document that defines' $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
 	done
 	@printf '%s\n' 'xr checks pass'
 	@# breqn's displays are equations: no warnings, right numbers.
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error breqn >/dev/null || { echo "breqn: LaTeX error"; exit 1; }; done
 	@! grep -q 'mermin Warning\|undefined\|multiply' breqn.log || { echo "breqn: warnings"; exit 1; }
 	@pdftotext breqn.pdf - | tr '\n' ' ' | grep -q 'BREQN: A (1) A two (1) D (2) G (3a) G two (3a)\.' || { echo "breqn: wrong citations"; exit 1; }
+	@pdftotext breqn.pdf - | tr '\n' ' ' | grep -q 'GROUP: GRP (4)\.' || { echo "breqn: dgroup label"; exit 1; }
 	@printf '%s\n' 'breqn checks pass'
 	@# A key that is not text, cited before its phrase is known, must not
 	@# stop the first run.
@@ -87,6 +88,7 @@ check:
 	  pdftotext $$c.pdf - | tr '\n' ' ' | grep -qF 'EDGE: Maxwell & Faraday (2); mass phrase (3); sec2:energy (3); numcases line (4); IEEE line (6); eqnarray line (7); 1; 1.' || { echo "$$c: wrong citations"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'MIXED: mixed phrase (9).' || { echo "$$c: a key given twice on one line"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'ORDER: order phrase (10).' || { echo "$$c: \\aka before \\label of the same key"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'BOTH: alias (11); both phrase (11).' || { echo "$$c: alias before a phrased \\label key"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
 	done
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
@@ -105,4 +107,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn firstrun adopt beamer nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex

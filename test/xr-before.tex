@@ -1,10 +1,13 @@
 \documentclass{article}
 \usepackage{amsmath}\usepackage{xr-hyper}\usepackage{hyperref}\usepackage{mermin}
 \externaldocument[S-]{xr-supp}
+\externaldocument[P-]{xr-plain}
 \begin{document}
 XR: the \eq{S-S2} holds and \eq{S-plain}.
 % The eq: fallback reaches the other document.
 XRQ: the \eq{S-sum rule}.
 % A key that is not text prints verbatim, with a warning.
 XRU: \eq{S-E_field}.
+% Labels of a document without mermin.
+XRP: \eq{P-gauss}; \eq{P-sum rule}.
 \end{document}

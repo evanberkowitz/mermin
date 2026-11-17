@@ -22,6 +22,11 @@ for aux in sys.argv[1:]:
         if len(vals) != 1: ok = False
         nums[g] = num
         print(f'{aux:20} {g:4} {sorted(ks)} -> {num} {status}')
+    # Every display line has its own number; g18 and g19 label a section
+    # and a figure, whose counters are separate.
+    shown = {g: n for g, n in nums.items() if g not in ('g18', 'g19')}
+    if len(set(shown.values())) != len(shown):
+        print(f'{aux}: two display groups share a number: {shown}'); ok = False
     expected = 20
     if len(groups) != expected:
         print(f'{aux}: expected {expected} groups, got {sorted(groups)}'); ok = False
