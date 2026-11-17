@@ -225,6 +225,9 @@
 % before or after it.
 % It requires a \LaTeX\ format from 2020-10-01 or later, for the
 % |begindocument/end| hook.
+% arXiv compiles papers with its own fixed \TeX\ Live installations, which
+% do not receive new packages, so a paper submitted there should include
+% \texttt{mermin.sty} among its files.
 % The \textsf{mathtools} option |showonlyrefs| has not been tested.
 % Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
 % equations, so \cs{eq} warns about them; \textsf{align} replaces it.

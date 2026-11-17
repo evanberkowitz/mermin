@@ -71,6 +71,12 @@ twice for the manual.
 
 Requires a LaTeX format from 2020-10-01 or later, and amsmath.
 
+### arXiv
+
+arXiv compiles papers with its own fixed TeX Live installations (2025 by
+default, 2023 on request), which do not receive new or updated packages.
+Upload `mermin.sty` alongside your `.tex` files.
+
 ## Testing
 
 ```sh
@@ -85,8 +91,9 @@ text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
 `\alsolabel`, and non-ASCII phrases. Finally, it checks that `\eq` warns
 exactly when it cites something other than an equation, and that
 `\eqcite` takes over when another package owns `\eq`. GitHub Actions runs the suite with pdfLaTeX,
-LuaLaTeX, and XeLaTeX on the current TeX Live, and with pdfLaTeX on TeX
-Live 2021, the oldest supported LaTeX.
+LuaLaTeX, and XeLaTeX on the current TeX Live; with pdfLaTeX on TeX Live
+2023 and 2025, the versions arXiv uses; and with pdfLaTeX on TeX Live 2021,
+the oldest supported LaTeX.
 
 ## License
 

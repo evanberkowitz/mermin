@@ -19,6 +19,11 @@ jobs:
           # The oldest supported LaTeX format is 2020-10-01, which TeX Live 2021 ships.
           - texlive: TL2021-historic
             engine: pdflatex
+          # arXiv compiles with TeX Live 2025 by default and offers 2023.
+          - texlive: TL2023-historic
+            engine: pdflatex
+          - texlive: TL2025-historic
+            engine: pdflatex
     steps:
       - uses: actions/checkout@v4
       - name: Install test tools
