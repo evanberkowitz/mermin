@@ -1,7 +1,9 @@
 \documentclass{article}
-\usepackage{amsmath}\usepackage{mermin}
+\usepackage{amsmath}\usepackage{xr}\usepackage{mermin}
+% A document read through xr must not end the grace period early.
+\externaldocument[S-]{xr-supp}
 \begin{document}
 % The Makefile writes an .aux without mermin's marks, as from before mermin.
-The \eq{anomaly} and \eq{fig:x}.
+The \eq{anomaly}, \eq{fig:x}, and \eq{S-S1}.
 \begin{equation} a=1 \label{anomaly} \end{equation}
 \end{document}

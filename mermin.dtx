@@ -220,9 +220,10 @@
 % In \textsf{beamer}, |\aka<|\meta{overlay}|>| passes the overlay to
 % \cs{label}, as |\label<|\meta{overlay}|>| does; in a display, where
 % \textsf{amsmath}'s \cs{label} takes no overlay, the overlay is dropped.
-% Like \cs{label}, \cs{aka} on a line without a number, such as one with
-% \cs{notag} or in |equation*|, labels the next numbered line, or the
-% current section; put it on a numbered line.
+% On a line without a number, such as one with \cs{notag} or in
+% |equation*|, \cs{aka} does what \cs{label} does there, which is seldom
+% what is wanted (in \textsf{align} it labels the next numbered line);
+% put it on a numbered line.
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
 % In a heading that a class sets in capitals, the phrase is left as
@@ -384,7 +385,13 @@
       \let\cref@old@label@in@display\mermin@also@stored
     \fi
     \IfValueTF{#1}%
-      {\ifx\label\label@in@display\label{#3}\else\label<#1>{#3}\fi}%
+      {\ifx\label\mermin@doclabel
+         \label<#1>{#3}%
+       \else\ifx\label\mermin@marklabel
+         \label<#1>{#3}%
+       \else
+         \label{#3}%
+       \fi\fi}%
       {\label{#3}}%
   \endgroup
   \@esphack}
@@ -467,12 +474,16 @@
   \if@filesw
     \immediate\write\@auxout{%
       \string\providecommand\string\mermin@equation[1]{}}%
+    \immediate\write\@auxout{%
+      \string\providecommand\string\mermin@auxmark{}\string\mermin@auxmark}%
   \fi}
+\def\mermin@auxmark{\global\let\mermin@marked\@empty}
 \AddToHook{include/before}{%
   \if@filesw
     \immediate\write\@partaux{%
       \string\providecommand\string\mermin@newphrase[2]{}%
-      \string\providecommand\string\mermin@equation[1]{}}%
+      \string\providecommand\string\mermin@equation[1]{}%
+      \string\providecommand\string\mermin@auxmark{}}%
   \fi}
 %    \end{macrocode}
 % \end{macro}
@@ -492,12 +503,11 @@
   \ifdefined\eq\else\let\eq\eqcite\fi
   \ifdefined\aka\else\let\aka\alsolabel\fi
   \ifx#1\mermin@equation
-    \mermin@equation{\XR@prefix#2}%
+    \@xp\gdef\csname mermin@eq@\XR@prefix#2\endcsname{}%
     \def\mermin@xr@key{#2}%
     \mermin@xr@eqsplit\relax#2\mermin@stop eq:\mermin@stop\mermin@nil
-    \@ifundefined{mermin@ph@\XR@prefix#2}%
-      {\@xp\xdef\csname mermin@ph@\XR@prefix#2\endcsname
-         {\unexpanded\@xp{\mermin@xr@rest}}}{}%
+    \@xp\xdef\csname mermin@xrdef@\XR@prefix#2\endcsname
+      {\unexpanded\@xp{\mermin@xr@rest}}%
   \else\ifx#1\mermin@newphrase
     \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
   \fi\fi
@@ -561,7 +571,8 @@
     \let\mermin@sub@orig\label
     \let\label\mermin@marklabel
   \fi}
-\def\mermin@marklabel{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}
+\def\mermin@marklabel{%
+  \@ifnextchar<\mermin@sub@ov{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}}
 \AddToHook{env/subequations/begin}{\mermin@marklabels}
 \AddToHook{env/dmath/begin}{\mermin@marklabels}
 \AddToHook{env/dseries/begin}{\mermin@marklabels}
@@ -572,6 +583,7 @@
 \AddToHook{env/IEEEeqnarray*/begin}{\mermin@marklabels}
 \def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
 \def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
+\def\mermin@sub@ov<#1>#2{\mermin@markeq{#2}\mermin@sub@orig<#1>{#2}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -707,7 +719,7 @@
 % argument, so that a bare key is never scanned as a delimited argument:
 % inside an alignment an |&| in it would end the cell.
 %    \begin{macrocode}
-\def\mermin@firstof#1{\@xp\mermin@firstof@\detokenize{#1}\mermin@nil}
+\def\mermin@firstof#1{\@xp\mermin@firstof@\detokenize{#1}\relax\mermin@nil}
 \def\mermin@firstof@#1#2\mermin@nil{#1}
 \def\mermin@cref@entry#1{%
   \if\mermin@firstof{#1}[\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
@@ -791,7 +803,7 @@
     \ifdefined\mermin@marked
       \@ifundefined{mermin@eq@\mermin@key}{%
         \PackageWarning{mermin}{`#1' is not an equation label,\MessageBreak
-          yet \string\eq\space prints a parenthesized equation
+          yet \mermin@eqcs\space prints a parenthesized equation
           number;\MessageBreak use \string\ref\space or \string\cref\space
           for figures, sections, and theorems}}{}%
     \fi}%
@@ -799,19 +811,25 @@
   {\@ifundefined{mermin@ph@\mermin@key}%
      {\@ifundefined{r@\mermin@key}%
         {\mermin@verbatim{#1}}%
-        {\mermin@ifunprintable{#1}%
+        {\@ifundefined{mermin@xrdef@\mermin@key}%
+           {\def\mermin@text{#1}}%
+           {\@xp\let\@xp\mermin@text
+              \csname mermin@xrdef@\mermin@key\endcsname}%
+         \@xp\mermin@ifunprintable\@xp{\mermin@text}%
            {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
               text,\MessageBreak so it is printed verbatim; give the line
-              \MessageBreak\string\aka[\mermin@phrasemeta]{\mermin@key}\space
+              \MessageBreak\mermin@akacs[\mermin@phrasemeta]{\mermin@key}\space
               beside its\MessageBreak\string\label{\mermin@key}}%
-            \mermin@verbatim{#1}}%
-           {#1}}}%
+            \@xp\mermin@verbatim\@xp{\mermin@text}}%
+           {\mermin@text}}}%
      {\csname mermin@ph@\mermin@key\endcsname}%
    ~\@xp\eqref\@xp{\mermin@key}}%
 }
 \def\mermin@phrasemeta{<phrase>}
+\def\mermin@akacs{\string\alsolabel}
+\def\mermin@eqcs{\string\eqcite}
 \def\mermin@verbatim#1{{\normalfont\ttfamily\detokenize{#1}}}
-\edef\mermin@specials{\detokenize{_^$&}\@percentchar\@backslashchar}
+\edef\mermin@specials{\detokenize{_^$&<>|}\@percentchar\@backslashchar}
 \def\mermin@ifunprintable#1{%
   \edef\mermin@tmp{\detokenize{#1}}%
   \let\mermin@bad\@empty
@@ -857,6 +875,9 @@
 \AddToHook{begindocument/end}{%
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
+  \let\mermin@doclabel\label
+  \ifx\aka\alsolabel\def\mermin@akacs{\string\aka}\fi
+  \ifx\eq\eqcite\def\mermin@eqcs{\string\eq}\fi
   \ifdefined\pdfstringdefDisableCommands
     \pdfstringdefDisableCommands{%
       \let\alsolabel\mermin@gobble@aka
@@ -885,7 +906,10 @@
           {\mermin@pdf@cite{#1}{#1}}}}}
 \def\mermin@pdf@cite#1#2{%
   \ifcsname mermin@ph@#2\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-    {\csname mermin@ph@#2\endcsname}{#1}%
+    {\csname mermin@ph@#2\endcsname}%
+    {\ifcsname mermin@xrdef@#2\endcsname
+       \@xp\@firstoftwo\else\@xp\@secondoftwo\fi
+       {\csname mermin@xrdef@#2\endcsname}{#1}}%
   \space(\ref{#2})}
 %</package>
 %    \end{macrocode}

@@ -1,0 +1,9 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}
+\begin{document}
+% No labeled equation at all: \eq must still warn about non-equations.
+\section{Intro}\label{intro}
+\begin{figure}\caption{x}\label{fig}\end{figure}
+\begin{equation*} a=b \end{equation*}
+See \eq{intro} and \eq{fig}.
+\end{document}

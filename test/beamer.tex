@@ -5,4 +5,12 @@
 \begin{align} a&=1 \aka<1->[first phrase]{one} \\ b&=2 \aka{two} \end{align}
 BEAMER: \eq{one}; \eq{two}.
 \end{frame}
+% Overlays on \label and \aka inside subequations and multline.
+\begin{frame}
+\begin{subequations}\label<1->{grp}
+\begin{align} c&=d \label{three} \end{align}
+\end{subequations}
+\begin{multline} e\\=f \aka<1->{ml} \end{multline}
+BSUB: \eqref{grp}; \eqref{ml}.
+\end{frame}
 \end{document}

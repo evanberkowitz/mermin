@@ -47,8 +47,9 @@ check:
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error xr-supp >/dev/null || { echo "xr-supp: LaTeX error"; exit 1; }; done
 	@for c in xr-before xr-after; do \
 	  for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
-	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
-	  ! grep -q 'mermin Warning\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
+	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
+	  ! grep -q 'not an equation\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
+	  grep -q "S-E_field' has no typeset phrase" $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
 	done
 	@printf '%s\n' 'xr checks pass'
 	@# breqn's displays are equations: no warnings, right numbers.
@@ -71,6 +72,10 @@ check:
 	@# beamer: \aka<overlay> in a display drops the overlay.
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error beamer >/dev/null || { echo "beamer: LaTeX error"; exit 1; }; done
 	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
+	@pdftotext beamer.pdf - | grep -qF 'BSUB: (3); (4).' || { echo "beamer: overlays in subequations or multline"; exit 1; }
+	@# \eq warns about non-equations even when no equation is labeled.
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error nomark >/dev/null || { echo "nomark: LaTeX error"; exit 1; }; done
+	@grep -c 'is not an equation label' nomark.log | grep -qx 2 || { echo "nomark: expected two warnings"; exit 1; }
 	@printf '%s\n' 'first-run checks pass'
 	@# Moving arguments, bookmarks, keys with & and macros, \eq in math, and
 	@# equations of cases, IEEEtrantools, and eqnarray.
@@ -100,4 +105,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn firstrun adopt beamer edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn firstrun adopt beamer nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
