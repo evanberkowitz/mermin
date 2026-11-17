@@ -35,6 +35,7 @@
 \begin{document}
   \DocInput{mermin.dtx}
   \PrintChanges
+  \clearpage
   \PrintIndex
 \end{document}
 %</driver>
@@ -169,14 +170,27 @@
 % |\label{eq:shift relation}|.
 % A phrase that cannot be a key, because it contains mathematics or a
 % command, is given where the label is defined, as the optional argument of
-% \cs{alsolabel}, and every citation then uses the plain key:
+% \cs{alsolabel}, and every citation then uses the plain key.
+% For example, a compact boson on a lattice may be given the Villain action
+% \begin{equation}
+%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
+%   \alsolabel[$\Gamma$ action]{Gamma action}
+% \end{equation}
+% from the source
 % \begin{verbatim}
 % \begin{equation}
-%   S_\Gamma = ... \alsolabel[$\Gamma$ action]{Gamma action}
+%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
+%   \alsolabel[$\Gamma$ action]{Gamma action}
 % \end{equation}
-% ... the \eq{Gamma action} ...
+%
+% The integer field $n$ makes the \eq{Gamma action} invariant
+% under $\phi\to\phi+2\pi k$ with $n\to n+dk$.
 % \end{verbatim}
-% prints ``the $\Gamma$ action'' followed by the line's number.
+% and the citation typesets as
+% \begin{quote}
+% The integer field $n$ makes the \eq{Gamma action} invariant
+% under $\phi\to\phi+2\pi k$ with $n\to n+dk$.
+% \end{quote}
 %
 % Because \cs{label} is left alone, two \cs{label}s on one line remain the
 % error \textsf{amsmath} has always reported; only \cs{alsolabel} adds
