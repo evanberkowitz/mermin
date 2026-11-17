@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.engine }} on TeX Live ${{ matrix.texlive }}
+    runs-on: ubuntu-latest
+    container: texlive/texlive:${{ matrix.texlive }}
+    strategy:
+      fail-fast: false
+      matrix:
+        texlive: [latest]
+        engine: [pdflatex, lualatex, xelatex]
+        include:
+          # The oldest supported LaTeX format is 2020-10-01, which TeX Live 2021 ships.
+          - texlive: TL2021-historic
+            engine: pdflatex
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends make python3 poppler-utils
+      - name: Versions
+        run: |
+          ${{ matrix.engine }} --version | head -1
+          grep -m1 'fmtversion' "$(kpsewhich latex.ltx)" || true
+          grep -m1 ProvidesPackage "$(kpsewhich amsmath.sty)"
+          grep -m1 ProvidesPackage "$(kpsewhich hyperref.sty)"
+          grep -m1 ProvidesPackage "$(kpsewhich cleveref.sty)"
+      - name: Generate mermin.sty
+        run: make mermin.sty
+      - name: Test
+        run: make test ENGINE=${{ matrix.engine }}
+      - name: Keep logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.engine }}-${{ matrix.texlive }}
+          path: test/*.log
+
+  manual:
+    name: manual
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install make
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends make
+      - name: Build mermin.pdf
+        run: make
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mermin.pdf
+          path: mermin.pdf
