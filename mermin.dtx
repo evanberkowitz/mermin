@@ -206,7 +206,8 @@
 % \cs{label}.
 % Outside a display \cs{alsolabel} is simply \cs{label}, so it can also
 % give a section, a figure, or a theorem a second name.
-% \cs{eq} is for equations only, since it prints a parenthesized number.
+% \cs{eq} is for equations only, since it prints a parenthesized number,
+% and it warns when its key names anything else.
 %
 % \section{Compatibility}
 %
@@ -219,6 +220,8 @@
 % It requires a \LaTeX\ format from 2020-10-01 or later, for the
 % |begindocument/end| hook.
 % The \textsf{mathtools} option |showonlyrefs| has not been tested.
+% Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
+% equations, so \cs{eq} warns about them; \textsf{align} replaces it.
 %
 % The repository that holds this package also holds a test suite.
 % Running |make test| typesets every environment above, with the keys
@@ -331,6 +334,72 @@
   \fi}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\mermin@markeq}
+% \begin{macro}{\mermin@equation}
+% \cs{eq} warns when it cites a label that is not an equation, so every
+% equation key is recorded, again through the \texttt{.aux} file:
+% |\mermin@equation{|\meta{key}|}| defines |\mermin@eq@|\meta{key}.
+%    \begin{macrocode}
+\def\mermin@markeq#1{%
+  \if@filesw
+    \immediate\write\@auxout{\string\mermin@equation{\unexpanded{#1}}}%
+  \fi}
+\def\mermin@equation#1{%
+  \expandafter\gdef\csname mermin@eq@#1\endcsname{}}
+\AtBeginDocument{%
+  \if@filesw
+    \immediate\write\@auxout{%
+      \string\providecommand\string\mermin@equation[1]{}}%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\mermin@keyof}
+% Display labels reach |\ltx@label| in stored form.
+% This sets |\mermin@rawkey| to the key inside it: the form itself without
+% \textsf{cleveref}, and otherwise the braced group of |{|\meta{key}|}| or
+% |[|\meta{type}|]{|\meta{key}|}|.
+%    \begin{macrocode}
+\def\mermin@keyof#1{%
+  \ifdefined\mermin@cref@old
+    \mermin@keyof@cref#1\mermin@nil
+  \else
+    \def\mermin@rawkey{#1}%
+  \fi}
+\def\mermin@keyof@cref{%
+  \@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
+\def\mermin@keyof@plain#1\mermin@nil{\def\mermin@rawkey{#1}}
+\def\mermin@keyof@opt[#1]#2\mermin@nil{\def\mermin@rawkey{#2}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@write@display@label}
+% Every display label, primary or queued, is written by this macro, which
+% also records its key as an equation.
+%    \begin{macrocode}
+\def\mermin@write@display@label#1{%
+  \mermin@ltx@label{#1}%
+  \mermin@keyof{#1}%
+  \@xp\mermin@markeq\@xp{\mermin@rawkey}%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@sub@label}
+% The label of a \textsf{subequations} group, numbered like ``(12)'', is
+% an ordinary \cs{label} between the displays, so inside the group
+% \cs{label} also records its key.
+% The displays within the group install their own \cs{label}.
+%    \begin{macrocode}
+\AddToHook{env/subequations/begin}{%
+  \let\mermin@sub@orig\label
+  \def\label{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}}
+\def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
+\def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\mermin@call@orig}
@@ -466,11 +535,11 @@
 \AddToHook{begindocument/end}{%
   \let\mermin@ltx@label\ltx@label
   \def\ltx@label#1{%
-    \mermin@ltx@label{#1}%
+    \mermin@write@display@label{#1}%
     \def\mermin@tmp{#1}%
     \ifx\mermin@tmp\mermin@tag
       \begingroup
-        \let\do\mermin@ltx@label
+        \let\do\mermin@write@display@label
         \mermin@queue
       \endgroup
       \gdef\mermin@queue{}\gdef\mermin@tag{}\gdef\mermin@promoted{}%
@@ -495,12 +564,18 @@
 % |eq:|\meta{phrase} is defined, in which case that key is used.
 % Before the first run defines any label, the key is the argument itself,
 % so the usual undefined-reference warning names it.
+% It warns if the key is defined but was not recorded as an equation.
 % It then prints the typeset phrase recorded for that key, or the argument
 % if none was recorded, a tie, and the equation number from \cs{eqref},
 % which \textsf{hyperref} makes a link.
 %    \begin{macrocode}
 \NewDocumentCommand\eq{m}{%
   \mermin@eq@key{#1}%
+  \@ifundefined{r@\mermin@key}{}{%
+    \@ifundefined{mermin@eq@\mermin@key}{%
+      \PackageWarning{mermin}{\string\eq{#1} cites a label that is not
+        an equation;\MessageBreak \string\eq\space prints a parenthesized
+        equation number}}{}}%
   \@ifundefined{mermin@ph@\mermin@key}%
     {#1}%
     {\csname mermin@ph@\mermin@key\endcsname}%

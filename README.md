@@ -40,7 +40,9 @@ order. `\label` itself is unchanged.
 `\eq{phrase}` falls back to the label `eq:phrase`, so existing `eq:` labels
 need no change. A phrase that cannot be a key, such as one with math, is
 given once where the label is defined, `\alsolabel[$\Gamma$ action]{Gamma action}`,
-and cited as `\eq{Gamma action}`, which prints "Γ action (n)".
+and cited as `\eq{Gamma action}`, which prints "Γ action (n)". `\eq` is for
+equations only and warns when its key names a section, figure, or anything
+else.
 
 The full documentation, including Mermin's three rules and the
 annotated implementation, is `mermin.pdf`.
@@ -79,7 +81,8 @@ package configurations (amsmath alone; with hyperref; with hyperref and
 cleveref; and with mermin loaded first), and checks that every key in each
 `.aux` file resolves to its line's number and anchor. It also checks the
 text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
-`\alsolabel`, and non-ASCII phrases.
+`\alsolabel`, and non-ASCII phrases, and that `\eq` warns exactly when it
+cites something other than an equation.
 
 ## License
 

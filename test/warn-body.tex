@@ -1,0 +1,11 @@
+% Citations of equations must not warn; citations of anything else must.
+\section{A section}\label{the section}\alsolabel{other section name}
+\begin{equation} a=1 \label{good equation} \alsolabel{good alias} \end{equation}
+\begin{subequations}\label{group}
+\begin{align} b&=1 \label{first member} \\ b&=2 \alsolabel{second member} \end{align}
+\end{subequations}
+\begin{multline} c \\ = d \label{long one} \alsolabel{long alias} \end{multline}
+\begin{figure}\caption{x}\label{a figure}\end{figure}
+\eq{good equation} \eq{good alias} \eq{group} \eq{first member} \eq{second member}
+\eq{long one} \eq{long alias}
+WARN: \eq{the section} \eq{other section name} \eq{a figure}
