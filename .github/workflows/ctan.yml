@@ -1,0 +1,50 @@
+name: ctan
+
+# Builds the CTAN archive, mermin.zip, with `make ctan`.
+#   - Run by hand (Actions > ctan > Run workflow): the zip is an artifact.
+#   - Pushing a tag such as v0.1: the tag must match the version in
+#     mermin.dtx's \ProvidesPackage line; the tests run, and a GitHub
+#     release for the tag gets mermin.zip and mermin.pdf attached.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends make python3 poppler-utils zip unzip
+      - name: Check that the tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(sed -n 's/^ *\[[0-9/]* \(v[0-9][0-9.]*\) .*/\1/p' mermin.dtx | head -1)
+          echo "tag ${GITHUB_REF_NAME}, mermin.dtx ${version}"
+          test "${GITHUB_REF_NAME}" = "${version}"
+      - name: Test
+        if: startsWith(github.ref, 'refs/tags/')
+        run: make test
+      - name: Build mermin.zip
+        run: make ctan
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mermin-ctan
+          path: |
+            mermin.zip
+            mermin.pdf
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            mermin.zip
+            mermin.pdf
