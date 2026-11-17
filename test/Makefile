@@ -65,6 +65,8 @@ check:
 	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'See the E field (1).' || { echo "firstrun: wrong citation"; exit 1; }
 	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'The H_0 (2) holds.' || { echo "firstrun: unprintable key not printed verbatim"; exit 1; }
 	@grep -q "mermin Warning: .H_0' has no typeset phrase" firstrun.log || { echo "firstrun: no warning for an unprintable key"; exit 1; }
+	@rm -f accent.aux; for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error accent >/dev/null || { echo "accent: LaTeX error on run $$i"; exit 1; }; done
+	@pdftotext accent.pdf - | tr '\n' ' ' | grep -qF 'ACCENT: the Schr\"odinger (1).' || { echo "accent: wrong text"; exit 1; }
 	@# A paper that adopts mermin has an .aux without equation marks: no
 	@# warnings until mermin has written one.
 	@printf '%s\n' '\relax' '\newlabel{anomaly}{{1}{1}}' '\newlabel{fig:x}{{1}{1}}' > adopt.aux
@@ -84,10 +86,10 @@ check:
 	@rm -f latexdiff.aux
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error latexdiff >/dev/null || { echo "latexdiff: LaTeX error"; exit 1; }; done
 	@! grep -q 'multiply' latexdiff.log || { echo "latexdiff: a deleted \\aka defined its key again"; exit 1; }
+	@! grep -qE "removing .\\\\DIFdel(begin|end)" latexdiff.log || { echo "latexdiff: bookmark warnings from latexdiff's markers"; exit 1; }
 	@pdftotext latexdiff.pdf - | tr '\n' ' ' | grep -qF 'the partition function (1)' || { echo "latexdiff: wrong citation"; exit 1; }
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error ambiguous >/dev/null || { echo "ambiguous: LaTeX error"; exit 1; }; done
 	@grep -q "mermin Warning: .mass' and .eq:mass' label different" ambiguous.log || { echo "ambiguous: no warning"; exit 1; }
-	@! grep -q "label different" edge-plain.log eq-plain.log || { echo "spurious ambiguity warning"; exit 1; }
 	@rm -f acronym.aux
 	@for i in 1 2 3; do $(ENGINE) -interaction=nonstopmode -halt-on-error acronym >/dev/null || { echo "acronym: LaTeX error"; exit 1; }; done
 	@! grep -q 'may have changed' acronym.log || { echo "acronym: rerun requested forever"; exit 1; }
@@ -119,6 +121,7 @@ check:
 	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMESPACE: Chiral fermions.' || { echo "edge-cleveref: \\aka mid-title ate a space"; exit 1; }
 	@pdftotext edge-plain.pdf - | grep -qF 'KEY: key (13).' || { echo "edge-plain: a label named key"; exit 1; }
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
+	@! grep -q "label different" edge-plain.log eq-plain.log || { echo "spurious ambiguity warning"; exit 1; }
 	@printf '%s\n' 'edge-case checks pass'
 	@# A document that drops mermin must still read an excluded file's .aux.
 	@rm -f inc-ch1.aux inc-ch2.aux
@@ -134,4 +137,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french acronym useraka iop markup latexdiff ambiguous nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun accent adopt beamer french acronym useraka iop markup latexdiff ambiguous nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex

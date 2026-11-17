@@ -43,8 +43,11 @@
 \lstnewenvironment{DIFverbatim*}{\lstset{style=DIFverbatimstyle,showspaces=true}}{} %DIF PREAMBLE
 %DIF END PREAMBLE EXTENSION ADDED BY LATEXDIFF
 
+% Added for the test: hyperref, and a heading with a deletion, whose
+% bookmark must not complain about latexdiff's markers.
+\usepackage{hyperref}
 \begin{document}
-\section{Setup}
+\section{\DIFdelbegin \DIFdel{Old}\DIFdelend \DIFaddbegin \DIFadd{Setup}\DIFaddend}
 We begin with \DIFaddbegin \DIFadd{the
 }\begin{equation}
   \DIFadd{Z=\int D\phi\, e^{-S[\phi]},

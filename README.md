@@ -36,7 +36,7 @@ replace it entirely. Every key gets the line's number and hyperref anchor,
 and `\ref`, `\eqref`, `\pageref`, and `\cref` all work. It supports the
 amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
 `subequations`), `empheq`, breqn, the cases package, IEEEtrantools'
-`IEEEeqnarray`, and `eqnarray`, with hyperref and cleveref loaded before
+`IEEEeqnarray`, subeqnarray, and `eqnarray`, with hyperref and cleveref loaded before
 or after it (cleveref, as always, after amsmath), and works with xr and
 xr-hyper. `\label` itself is unchanged.
 
