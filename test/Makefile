@@ -15,10 +15,13 @@ check:
 	@python3 check.py $(addsuffix .aux,$(CONFIGS)) | grep -v ' ok$$' ; \
 	python3 check.py $(addsuffix .aux,$(CONFIGS)) >/dev/null && printf "%s\n" "\\alsolabel checks pass"
 	@python3 check_eq.py $(addsuffix .pdf,$(EQ_CONFIGS))
-	@# nccmath defines \eq: mermin must leave it alone and say so, and only there.
-	@grep -q 'eq was already defined' eq-nccmath.log || { echo 'eq-nccmath: no \\eq-taken warning'; exit 1; }
-	@! grep -l 'eq was already defined' $(filter-out eq-nccmath.log,$(addsuffix .log,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS))) || { echo 'spurious \\eq-taken warning'; exit 1; }
-	@printf '%s\n' '\eqcite fallback checks pass'
+	@# nccmath defines \eq and eq-nccmath defines \aka: mermin must leave both
+	@# alone and say so, and only there.
+	@for n in eq aka; do \
+	  grep -qF "\\$$n was already defined" eq-nccmath.log || { printf '%s\n' "eq-nccmath: no \\$$n-taken warning"; exit 1; }; \
+	  ! grep -lF "\\$$n was already defined" $(filter-out eq-nccmath.log,$(addsuffix .log,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS))) || { printf '%s\n' "spurious \\$$n-taken warning"; exit 1; }; \
+	done
+	@printf '%s\n' '\eqcite and \alsolabel fallback checks pass'
 	@python3 check_warn.py $(addsuffix .log,$(WARN_CONFIGS))
 
 clean:

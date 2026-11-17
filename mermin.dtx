@@ -45,7 +45,7 @@
 %
 % \CheckSum{0}
 %
-% \changes{v0.1}{2026/11/16}{Initial version, providing \cs{alsolabel} and \cs{eq}.}
+% \changes{v0.1}{2026/11/16}{Initial version, providing \cs{aka} (\cs{alsolabel}) and \cs{eq} (\cs{eqcite}).}
 %
 % \GetFileInfo{mermin.sty}
 %
@@ -67,7 +67,7 @@
 % N.~David Mermin asks in ``What's Wrong with These Equations?''\
 % \cite{mermin}.
 % An equation is labeled by the noun phrases that describe it, as many as
-% the prose needs, with \cs{alsolabel}, and cited by one of those phrases
+% the prose needs, with \cs{aka}, and cited by one of those phrases
 % with \cs{eq}, which prints the phrase and the number together.
 % Citing an equation by a bare number becomes the harder thing to write.
 % \end{abstract}
@@ -101,10 +101,11 @@
 %
 % \section{Usage}
 %
-% \DescribeMacro{\alsolabel}
+% \DescribeMacro{\aka}
 % \DescribeMacro{\eq}
 % Load the package with |\usepackage{mermin}|.
-% Then |\alsolabel{|\meta{phrase}|}| attaches \meta{phrase} as a key to the
+% Then |\aka{|\meta{phrase}|}|, for ``also known as'', attaches
+% \meta{phrase} as a key to the
 % current equation, or to the current line of a multi-line display, in
 % addition to its \cs{label}.
 % It may be used any number of times on a line, before or after the
@@ -119,14 +120,14 @@
 % \begin{equation}
 %   L_1^2+L_2^2=R_1^2+R_2^2.
 %   \label{anomaly condition}
-%   \alsolabel{Pythagorean condition}
+%   \aka{Pythagorean condition}
 % \end{equation}
 % The source of this display, and of a paragraph that cites it, reads
 % \begin{verbatim}
 % \begin{equation}
 %   L_1^2+L_2^2=R_1^2+R_2^2.
 %   \label{anomaly condition}
-%   \alsolabel{Pythagorean condition}
+%   \aka{Pythagorean condition}
 % \end{equation}
 %
 % The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies
@@ -156,11 +157,11 @@
 % any other key.
 %
 % Lines of an \textsf{align} are labeled the same way, one set of phrases
-% per line, and a line may be labeled by \cs{alsolabel} alone:
+% per line, and a line may be labeled by \cs{aka} alone:
 % \begin{verbatim}
 % \begin{align}
-%   S &= \int d^2x\,\mathcal{L} \label{action} \alsolabel{fermion action} \\
-%   P_{L,R} &= \tfrac12(1\pm\gamma_5) \alsolabel{chiral projectors}
+%   S &= \int d^2x\,\mathcal{L} \label{action} \aka{fermion action} \\
+%   P_{L,R} &= \tfrac12(1\pm\gamma_5) \aka{chiral projectors}
 % \end{align}
 % \end{verbatim}
 %
@@ -170,19 +171,19 @@
 % |\label{eq:shift relation}|.
 % A phrase that cannot be a key, because it contains mathematics or a
 % command, is given where the label is defined, as the optional argument of
-% \cs{alsolabel}, and every citation then uses the plain key.
+% \cs{aka}, and every citation then uses the plain key.
 % For example, a compact boson on a lattice may be given the Villain action
 % \begin{equation}
 %   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
-%   \alsolabel[$\Gamma$ action]{Gamma action}
-%   \alsolabel{Villain model}
+%   \aka[$\Gamma$ action]{Gamma action}
+%   \aka{Villain model}
 % \end{equation}
 % from the source
 % \begin{verbatim}
 % \begin{equation}
 %   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
-%   \alsolabel[$\Gamma$ action]{Gamma action}
-%   \alsolabel{Villain model}
+%   \aka[$\Gamma$ action]{Gamma action}
+%   \aka{Villain model}
 % \end{equation}
 %
 % The integer field $n$ makes the \eq{Gamma action} invariant
@@ -199,21 +200,25 @@
 % \end{quote}
 %
 % Because \cs{label} is left alone, two \cs{label}s on one line remain the
-% error \textsf{amsmath} has always reported; only \cs{alsolabel} adds
+% error \textsf{amsmath} has always reported; only \cs{aka} adds
 % keys.
 % Citing a key with \cs{ref}, \cs{eqref}, \cs{pageref}, or the
 % \textsf{cleveref} command \cs{cref} works exactly as for a key given to
 % \cs{label}.
-% Outside a display \cs{alsolabel} is simply \cs{label}, so it can also
+% Outside a display \cs{aka} is simply \cs{label}, so it can also
 % give a section, a figure, or a theorem a second name.
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
 %
+% \DescribeMacro{\alsolabel}
 % \DescribeMacro{\eqcite}
-% \cs{eqcite} is the same command under a name no other package uses.
-% Several packages, among them \textsf{nccmath}, define their own \cs{eq}.
-% When one of them is loaded, \textsf{mermin} leaves its \cs{eq} alone,
-% says so in a warning, and the document cites equations with \cs{eqcite}.
+% Short names are easily taken.
+% \cs{alsolabel} and \cs{eqcite} are the same commands as \cs{aka} and
+% \cs{eq}, under names no other package uses.
+% Several packages, among them \textsf{nccmath}, define their own \cs{eq},
+% and a document may define its own \cs{aka}.
+% \textsf{mermin} then leaves the existing command alone, says so in a
+% warning, and the document uses the long name instead.
 %
 % \section{Compatibility}
 %
@@ -595,22 +600,28 @@
 % \end{macro}
 %
 % \begin{macro}{\eq}
-% The short name \cs{eq} is also defined by other packages, among them
-% \textsf{nccmath}.
-% It is therefore assigned only at |begindocument/end|, after every
-% package has had the chance to define it, and only if it is still free.
-% Otherwise the other package keeps \cs{eq} and the user is told to write
-% \cs{eqcite}.
+% \begin{macro}{\aka}
+% The short names \cs{eq} and \cs{aka} may already be taken, \cs{eq} for
+% instance by \textsf{nccmath}.
+% Each is therefore assigned only at |begindocument/end|, after every
+% package and the preamble have had the chance to define it, and only if it
+% is still free.
+% Otherwise the existing command is kept and the user is told to write the
+% long name.
 %    \begin{macrocode}
-\AddToHook{begindocument/end}{%
-  \@ifundefined{eq}%
-    {\NewCommandCopy\eq\eqcite}%
-    {\PackageWarningNoLine{mermin}{\string\eq\space was already defined,
+\def\mermin@shortname#1#2{%
+  \@ifundefined{#1}%
+    {\@xp\NewCommandCopy\csname #1\endcsname#2}%
+    {\PackageWarningNoLine{mermin}{\@backslashchar#1 was already defined,
       probably by another\MessageBreak package, and is left alone; write
-      \string\eqcite\space instead}}%
+      \string#2\space instead}}}
+\AddToHook{begindocument/end}{%
+  \mermin@shortname{eq}\eqcite
+  \mermin@shortname{aka}\alsolabel
 }
 %</package>
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \Finale
