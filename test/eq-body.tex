@@ -1,3 +1,4 @@
+\tableofcontents
 \begin{equation} a=1 \label{anomaly condition} \AKA{Pythagorean condition} \end{equation}
 \begin{equation} a=2 \label{eq:shift relation} \end{equation}
 \begin{align}
@@ -11,3 +12,9 @@ T3: the \EQ{shift relation} holds.
 T4: the \EQ{Gamma action} holds.
 T5: the \EQ{Schrödinger equation} holds.
 T6: the \EQ{Gamma dual} holds.
+\section{T7: the \EQ{anomaly condition} again}
+% \aka in running text must leave one space, as if it were not there.
+% (With hyperref and cleveref, \label itself leaves two.)
+\setbox0\hbox{A B}\dimen0=\wd0
+\setbox0\hbox{A \AKA{spacing} B}
+\ifdim\wd0=\dimen0 \else\errmessage{\string\aka\space changed the spacing}\fi

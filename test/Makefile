@@ -23,6 +23,11 @@ check:
 	done
 	@printf '%s\n' '\eqcite and \alsolabel fallback checks pass'
 	@python3 check_warn.py $(addsuffix .log,$(WARN_CONFIGS))
+	@# mathtools' showonlyrefs needs a third run to settle.
+	@for i in 1 2 3; do $(ENGINE) -interaction=nonstopmode -halt-on-error showonlyrefs >/dev/null || { echo "showonlyrefs: LaTeX error"; exit 1; }; done
+	@pdftotext showonlyrefs.pdf - | tr '\n' ' ' | grep -q 'See (1), (2), (3)\.' || { echo "showonlyrefs: aliases did not number their lines"; exit 1; }
+	@! pdftotext showonlyrefs.pdf - | grep -q '(4)' || { echo "showonlyrefs: an uncited line was numbered"; exit 1; }
+	@printf '%s\n' 'showonlyrefs checks pass'
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS),$c.aux $c.log $c.out $c.pdf)
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs,$c.aux $c.log $c.out $c.pdf $c.toc)

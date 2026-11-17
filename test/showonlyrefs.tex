@@ -1,0 +1,11 @@
+\documentclass{article}
+\usepackage{mathtools}\mathtoolsset{showonlyrefs}
+\usepackage{mermin}
+\begin{document}
+% Each line is cited only through an \aka key, so each must be numbered.
+\begin{equation} a=1 \label{real} \aka{alias} \end{equation}
+\begin{equation} a=2 \aka{alias two} \label{real two} \end{equation}
+\begin{equation} a=3 \aka{alone} \end{equation}
+\begin{equation} a=4 \label{never cited} \aka{also never cited} \end{equation}
+See \eqref{alias}, \eqref{alias two}, \eqref{alone}.
+\end{document}

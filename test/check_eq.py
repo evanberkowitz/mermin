@@ -18,6 +18,11 @@ for pdf in sys.argv[1:]:
         if want not in text:
             print(f'{pdf}: missing {want!r}')
             ok = False
+    # A citation in a section title must survive the trip through the .toc.
+    t7 = 'T7: the anomaly condition (1) again'
+    if text.count(t7) != 2:
+        print(f'{pdf}: {t7!r} appears {text.count(t7)} times, not twice (heading and contents)')
+        ok = False
 if ok:
     print('\\eq checks pass')
 sys.exit(0 if ok else 1)

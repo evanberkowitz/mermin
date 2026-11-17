@@ -22,7 +22,7 @@ for aux in sys.argv[1:]:
         if len(vals) != 1: ok = False
         nums[g] = num
         print(f'{aux:20} {g:4} {sorted(ks)} -> {num} {status}')
-    expected = 19
+    expected = 20
     if len(groups) != expected:
         print(f'{aux}: expected {expected} groups, got {sorted(groups)}'); ok = False
 sys.exit(0 if ok else 1)

@@ -169,6 +169,8 @@
 % no change: when no label \meta{phrase} exists, \cs{eq} uses
 % |eq:|\meta{phrase}, so |\eq{shift relation}| cites
 % |\label{eq:shift relation}|.
+% \cs{eq} prints its argument as the phrase, so a key that is not
+% printable text, such as |E_field|, also needs a phrase.
 % A phrase that cannot be a key, because it contains mathematics or a
 % command, is given where the label is defined, as the optional argument of
 % \cs{aka}, and every citation then uses the plain key.
@@ -234,7 +236,8 @@
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
 % do not receive new packages, so a paper submitted there should include
 % \texttt{mermin.sty} among its files.
-% The \textsf{mathtools} option |showonlyrefs| has not been tested.
+% With the \textsf{mathtools} option |showonlyrefs|, a line is numbered
+% when any of its keys is cited.
 % Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
 % equations, so \cs{eq} warns about them; \textsf{align} replaces it.
 %
@@ -321,8 +324,12 @@
 % that hook is redirected as well.
 % The optional typeset phrase is recorded first, by
 % |\mermin@writephrase| below.
+% The group would keep \cs{label}'s |\@esphack| from removing the space
+% after it in running text, so the whole command is wrapped in its own
+% |\@bsphack| and |\@esphack|.
 %    \begin{macrocode}
 \NewDocumentCommand\alsolabel{o m}{%
+  \@bsphack
   \IfValueT{#1}{\mermin@writephrase{#2}{#1}}%
   \begingroup
     \mermin@alsotrue
@@ -330,7 +337,8 @@
       \let\cref@old@label@in@display\mermin@also@stored
     \fi
     \label{#2}%
-  \endgroup}
+  \endgroup
+  \@esphack}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -453,12 +461,18 @@
 % A queue tagged with a different label is stale and is discarded first.
 % A form already in the queue is skipped, because a display typeset twice
 % runs its \cs{alsolabel}s twice.
+% With the \textsf{mathtools} option |showonlyrefs| a line is numbered only
+% if its primary label was cited, which \textsf{mathtools} records as
+% |\MT_r_|\meta{label}; a citation of a queued key counts for the line too.
 %    \begin{macrocode}
 \def\mermin@enqueue{%
   \ifx\mermin@tag\df@label\else
     \gdef\mermin@queue{}%
     \global\let\mermin@tag\df@label
   \fi
+  \@xp\mermin@keyof\mermin@form\mermin@nil
+  \@ifundefined{MT_r_\mermin@rawkey}{}%
+    {\global\@namedef{MT_r_\df@label}{}}%
   \begingroup
     \let\mermin@found\@empty
     \def\do##1{\def\mermin@tmp{##1}%
@@ -564,9 +578,9 @@
   \let\mermin@orig@label@in@display\label@in@display
   \ifdefined\cref@old@label@in@display
     \let\mermin@cref@old\cref@old@label@in@display
-    % cleveref's multline trial pass calls this directly; record its keys.
-    \def\cref@old@label@in@display#1{%
-      \mermin@markargs{#1}\mermin@cref@old{#1}}%
+    % cleveref's multline trial pass calls this directly; give it the same
+    % treatment as \label, which \mermin@call@orig undoes locally.
+    \def\cref@old@label@in@display#1{\mermin@real@in@display{#1}}%
   \fi
   \def\label@in@display{%
     \ifmermin@also
@@ -619,10 +633,13 @@
 % is still free.
 % Otherwise the existing command is kept and the user is told to write the
 % long name.
+% Each short name is a protected macro that expands to the long one, so
+% that it survives moving arguments such as section titles; in some
+% \LaTeX\ releases \cs{NewCommandCopy} loses that protection.
 %    \begin{macrocode}
 \def\mermin@shortname#1#2{%
   \@ifundefined{#1}%
-    {\@xp\NewCommandCopy\csname #1\endcsname#2}%
+    {\@xp\protected\@xp\def\csname #1\endcsname{#2}}%
     {\PackageWarningNoLine{mermin}{\@backslashchar#1 was already defined,
       probably by another\MessageBreak package, and is left alone; write
       \string#2\space instead}}}
