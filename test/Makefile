@@ -51,7 +51,7 @@ check:
 	@for c in xr-supp xr-plain; do for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; done
 	@for c in xr-before xr-after; do \
 	  for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
-	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t and 'XRP: gauss (1); sum rule (2).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
+	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t and 'XRP: gauss (1); sum rule (2).' in t and 'XRM: mass (5).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
 	  ! grep -q 'not an equation\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
 	  grep -q "S-E_field' has no typeset phrase" $$c.log && grep -q 'document that defines' $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
 	done
@@ -81,23 +81,23 @@ check:
 	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
 	@pdftotext beamer.pdf - | grep -qF 'BSUB: (3); (4).' || { echo "beamer: overlays in subequations or multline"; exit 1; }
 	@grep -qF 'newlabel{frametext}{{2}{3}' beamer.aux || { echo "beamer: overlay outside a display"; exit 1; }
-	@pdftotext beamer.pdf - | grep -qF 'BLBL: (5).' || { echo "beamer: \\label<overlay> in a display"; exit 1; }
+	@pdftotext beamer.pdf - | grep -qF 'BLBL: (5).' || { echo "beamer: label<overlay> in a display"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error iop >/dev/null || { echo "iop: LaTeX error with an iopart-like class"; exit 1; }; done
 	@pdftotext iop.pdf - | grep -qF 'IOP: the anomaly condition (1).' || { echo "iop: wrong citation"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error markup >/dev/null || { echo "markup: LaTeX error"; exit 1; }; done
 	@! grep -q 'mermin Warning' markup.log || { echo "markup: false warnings"; exit 1; }
 	@pdftotext markup.pdf - | tr '\n' ' ' | grep -qF 'SUBEQ: system (2), first row (2a), second row (2b).' || { echo "markup: subeqnarray citations"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error prefer >/dev/null || { echo "prefer: LaTeX error"; exit 1; }; done
-	@pdftotext prefer.pdf - | tr '\n' ' ' | grep -qF 'PREFER: the mass (3).' || { echo "prefer: \\eq{mass} did not prefer the equation eq:mass"; exit 1; }
+	@pdftotext prefer.pdf - | tr '\n' ' ' | grep -qF 'PREFER: the mass (3).' || { echo "prefer: eq{mass} did not prefer the equation eq:mass"; exit 1; }
 	@! grep -q 'mermin Warning' prefer.log || { echo "prefer: warnings"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error subcaption >/dev/null || { echo "subcaption: LaTeX error"; exit 1; }; done
-	@! grep -q 'multiply' subcaption.log || { echo "subcaption: \\aka defined its key again"; exit 1; }
+	@! grep -q 'multiply' subcaption.log || { echo "subcaption: aka defined its key again"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error xr-both >/dev/null || { echo "xr-both: LaTeX error"; exit 1; }; done
 	@pdftotext xr-both.pdf - | tr '\n' ' ' | grep -qF 'XRBOTH: the plain (2).' || { echo "xr-both: xr then xr-hyper lost the import"; exit 1; }
 	@rm -f latexdiff.aux
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error latexdiff >/dev/null || { echo "latexdiff: LaTeX error"; exit 1; }; done
-	@! grep -q 'multiply' latexdiff.log || { echo "latexdiff: a deleted \\aka defined its key again"; exit 1; }
-	@! grep -qE "removing .\\\\DIFdel(begin|end)" latexdiff.log || { echo "latexdiff: bookmark warnings from latexdiff's markers"; exit 1; }
+	@! grep -q 'multiply' latexdiff.log || { echo "latexdiff: a deleted aka defined its key again"; exit 1; }
+	@! grep -qE "removing .DIFdel(begin|end)" latexdiff.log || { echo "latexdiff: bookmark warnings from latexdiff's markers"; exit 1; }
 	@pdftotext latexdiff.pdf - | tr '\n' ' ' | grep -qF 'the partition function (1)' || { echo "latexdiff: wrong citation"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error ambiguous >/dev/null || { echo "ambiguous: LaTeX error"; exit 1; }; done
 	@grep -q "mermin Warning: .mass' and .eq:mass' label different" ambiguous.log || { echo "ambiguous: no warning"; exit 1; }
@@ -105,7 +105,7 @@ check:
 	@for i in 1 2 3; do $(TEX) -interaction=nonstopmode -halt-on-error acronym >/dev/null || { echo "acronym: LaTeX error"; exit 1; }; done
 	@! grep -q 'may have changed' acronym.log || { echo "acronym: rerun requested forever"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error useraka >/dev/null || { echo "useraka: LaTeX error"; exit 1; }; done
-	@pdftotext useraka.pdf - | tr '\n' ' ' | grep -qF 'USERAKA: The XY model (a.k.a. the O(2) model).' || { echo "useraka: the document's \\aka was stripped from a title"; exit 1; }
+	@pdftotext useraka.pdf - | tr '\n' ' ' | grep -qF 'USERAKA: The XY model (a.k.a. the O(2) model).' || { echo "useraka: the document's aka was stripped from a title"; exit 1; }
 	@# babel-french cannot read an .aux written by another engine.
 	@rm -f french.aux
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error french >/dev/null || { echo "french: LaTeX error"; exit 1; }; done
@@ -120,16 +120,17 @@ check:
 	  rm -f $$c.aux; \
 	  for i in 1 2 3; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
 	  ! grep -q 'mermin Warning\|undefined\|multiply\|may have changed\|Token not allowed' $$c.log || { echo "$$c: warnings"; exit 1; }; \
-	  ! grep -q 'aka' $$c.toc $$c.lof || { echo "$$c: \\aka written to the contents"; exit 1; }; \
+	  ! grep -q 'aka' $$c.toc $$c.lof || { echo "$$c: aka written to the contents"; exit 1; }; \
 	  pdftotext $$c.pdf - | tr '\n' ' ' | grep -qF 'EDGE: Maxwell & Faraday (2); mass phrase (3); sec2:energy (3); numcases line (4); IEEE line (6); eqnarray line (7); 1; 1.' || { echo "$$c: wrong citations"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'MIXED: mixed phrase (9).' || { echo "$$c: a key given twice on one line"; exit 1; }; \
-	  pdftotext $$c.pdf - | grep -qF 'ORDER: order phrase (10).' || { echo "$$c: \\aka before \\label of the same key"; exit 1; }; \
-	  pdftotext $$c.pdf - | grep -qF 'BOTH: alias (11); both phrase (11).' || { echo "$$c: alias before a phrased \\label key"; exit 1; }; \
-	  pdftotext $$c.pdf - | grep -qF 'PREFIX: prefixed (12); texted (12).' || { echo "$$c: eq: prefix printed, or \\aka in \\text"; exit 1; }; \
-	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'ORDER: order phrase (10).' || { echo "$$c: aka before label of the same key"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'BOTH: alias (11); both phrase (11).' || { echo "$$c: alias before a phrased label key"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'PREFIX: prefixed (12); texted (12).' || { echo "$$c: eq: prefix printed, or aka in text"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: eq in math mode"; exit 1; }; \
 	done
-	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMEREF: Methods.' || { echo "edge-cleveref: \\nameref of a title with \\aka"; exit 1; }
-	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMESPACE: Chiral fermions.' || { echo "edge-cleveref: \\aka mid-title ate a space"; exit 1; }
+	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMEREF: Methods.' || { echo "edge-cleveref: nameref of a title with aka"; exit 1; }
+	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMESPACE: Chiral fermions in two dimensions.' || { echo "edge-cleveref: aka mid-title ate a space or the rest"; exit 1; }
+	@grep -qF 'newlabel{fig:cited}{{2}{2}{Phase diagram, after \emph {Smith}}' edge-cleveref.aux || { echo "edge-cleveref: aka cut a caption's name short"; exit 1; }
 	@pdftotext edge-plain.pdf - | grep -qF 'KEY: key (13).' || { echo "edge-plain: a label named key"; exit 1; }
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
 	@! grep -q "label different" edge-plain.log eq-plain.log || { echo "spurious ambiguity warning"; exit 1; }

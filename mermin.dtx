@@ -117,8 +117,8 @@
 % |\eq{|\meta{phrase}|}| prints \meta{phrase}, a tie, and the equation
 % number in parentheses, linked by \textsf{hyperref} to the equation.
 %
-% Consider two-flavor chiral gauge theories whose gauge anomaly cancels
-% when the left- and right-handed charges obey
+% Consider two-flavor chiral gauge theories in two dimensions, whose gauge
+% anomaly cancels when the left- and right-handed charges obey
 % \begin{equation}
 %   L_1^2+L_2^2=R_1^2+R_2^2.
 %   \label{anomaly condition}
@@ -303,7 +303,8 @@
 % plain-text form, as in |\aka[\texorpdfstring{$E$}{E} field]{E_field}|.
 %
 % In a heading or running head that a class sets in capitals with
-% \cs{MakeUppercase}, the phrase is left as written, since it is printed
+% \cs{MakeUppercase}, the phrase is left as written, from the \LaTeX\
+% release of 2022-06 on, since it is printed
 % from its key; for a running head, give the heading a short form without
 % \cs{eq}, as in |\section[|\ldots|]{|\ldots|}|.
 % Classes that use the primitive \cs{uppercase}, such as \textsf{mnras}
@@ -314,8 +315,9 @@
 % \subsection{Classes and tools}
 %
 % In \textsf{beamer}, |\aka<|\meta{overlay}|>| passes the overlay to
-% \cs{label}, as |\label<|\meta{overlay}|>| does; in a display the overlay
-% of \cs{aka} or \cs{label} is dropped, and the label is on every slide.
+% \cs{label}, as |\label<|\meta{overlay}|>| does.
+% In a display the overlay of \cs{aka} or \cs{label} is dropped, and the
+% label's anchor is on the frame's first slide.
 %
 % The \textsf{iopart} class conflicts with \textsf{amsmath}, which this
 % package loads; when \textsf{iopart} is the class, the package applies
@@ -489,7 +491,8 @@
 %    \begin{macrocode}
 \def\mermin@record#1{%
   \if@filesw
-     % Expand as \protected@write does for \label, but write now.
+     % Expand the key, robust commands excepted, as \label's write does
+     % (which expands once more at shipout), but write now.
     \begingroup
       \let\protect\@unexpandable@protect
       \immediate\write\@auxout{#1}%
@@ -522,6 +525,8 @@
    % token of each line.
   \immediate\write#1{\string\mermin@signature}}
 \AtBeginDocument{\if@filesw\mermin@auxheader\@auxout\fi}
+ % Under \includeonly, the old .aux files of excluded chapters are read
+ % but not rewritten, so each needs its own \providecommand lines.
 \AddToHook{include/before}{\if@filesw\mermin@auxheader\@partaux\fi}
 \def\mermin@signature{\global\let\mermin@signed\@empty}
 \def\mermin@equation#1{\@xp\gdef\csname mermin@eq@#1\endcsname{}}
@@ -558,6 +563,7 @@
     \g@addto@macro\mermin@phkeys{\do{#1}}%
   \fi}
 \def\mermin@checkphrases{%
+   % Runs inside \enddocument's group, so \do is redefined only there.
   \def\do##1{\@ifundefined{mermin@seen@##1}{\@tempswatrue}{}}%
   \mermin@phkeys}
  % afteraux runs after the reread and before the kernel's rerun warning.
@@ -617,8 +623,8 @@
   \ifx\label\@gobble@om \mermin@aka@use\mermin@gobble@aka\fi
   \ifx\label\@gobble@with@sphack@om
     \mermin@aka@use\@gobble@with@sphack@om\fi
-   % caption disables \label this way, as in subcaption's list of
-   % figures.
+   % caption disables \label this way, in its single-line check and in
+   % subcaption's list of figures.
   \ifx\label\caption@gobble \mermin@aka@use\mermin@gobble@aka\fi
   \mermin@alsolabel}
  % \mermin@aka@use ends the test that matched, drops the remaining tests
@@ -695,6 +701,7 @@
   \mermin@keyof#1\mermin@nil
   \@xp\mermin@markeq\@xp{\mermin@rawkey}%
   \iffalse}\fi}
+ % [type] is cleveref's optional argument of \label.
 \def\mermin@keyof{\@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
 \def\mermin@keyof@plain#1\mermin@nil{\def\mermin@rawkey{#1}}
 \def\mermin@keyof@opt[#1]#2\mermin@nil{\def\mermin@rawkey{#2}}
@@ -716,6 +723,7 @@
 % and an environment nested in another, such as |dmath| in |dgroup|,
 % finds \cs{label} already wrapped and leaves it.
 %    \begin{macrocode}
+ % For environments that label equations with the ordinary \label.
 \def\mermin@wraplabel{%
   \ifx\label\mermin@marklabel\else
     \let\mermin@marklabel@orig\label
@@ -913,6 +921,7 @@
     \ifx\mermin@form\df@label\else\mermin@enqueue\fi
     \gdef\mermin@promoted{}%
   \else
+     % A promotion left over from a discarded measuring pass.
     \gdef\mermin@promoted{}%
     \mermin@markstore{#1}%
   \fi\fi}
@@ -969,6 +978,8 @@
 % The new |\label@in@display| sends \cs{alsolabel} and \cs{label} their
 % separate ways.
 %    \begin{macrocode}
+ % begindocument/end runs after hyperref's and cleveref's
+ % \AtBeginDocument code, which define their own versions of both.
 \AddToHook{begindocument/end}{%
   \let\mermin@ltx@label\ltx@label
   \def\ltx@label#1{%
@@ -976,6 +987,8 @@
     \def\mermin@tmp{#1}%
     \ifx\mermin@tmp\mermin@tag
       \begingroup
+         % Skip a queued key equal to the label just written, as on an
+         % \aka{A}\aka{K}\label{K} line.
         \def\do##1{\def\mermin@tmp{##1}%
           \ifx\mermin@tmp\mermin@tag\else\mermin@ltx@label{##1}\fi}%
         \mermin@queue
@@ -1091,14 +1104,25 @@
 % \texttt{.aux} file is signed, since only then are the equations known.
 %    \begin{macrocode}
 \def\mermin@ifpreferprefix#1{%
+   % True if #1 labels a non-equation and an eq: equation exists: here
+   % (both its label and its mark), or in a document read through xr.
+   % Only in a signed document, where non-equations are known.
   \ifdefined\mermin@signed\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
     {\@ifundefined{r@#1}{\@secondoftwo}%
        {\@ifundefined{mermin@eq@#1}%
-          {\@ifundefined{mermin@eq@eq:#1}{\@secondoftwo}{\@firstoftwo}}%
+          {\@ifundefined{mermin@xreq@#1}%
+             {\@ifundefined{r@eq:#1}{\@secondoftwo}%
+                {\@ifundefined{mermin@eq@eq:#1}%
+                   {\@secondoftwo}{\@firstoftwo}}}%
+             {\@firstoftwo}}%
           {\@secondoftwo}}}%
     {\@secondoftwo}}
 \def\mermin@resolve#1#2{%
-  \mermin@ifpreferprefix{#1}{#2{eq:#1}}{\mermin@resolve@{#1}{#2}}}
+  \mermin@ifpreferprefix{#1}%
+    {\@ifundefined{r@eq:#1}%
+       {\csname mermin@xreq@#1\endcsname{#2}}% through xr
+       {#2{eq:#1}}}%
+    {\mermin@resolve@{#1}{#2}}}
 \def\mermin@resolve@#1#2{%
   \@ifundefined{r@#1}%
     {\@ifundefined{r@eq:#1}%
@@ -1237,17 +1261,28 @@
 % there, since that method disables \cs{label}.)
 %    \begin{macrocode}
 \ExplSyntaxOn
- % One pattern for both lists of names: a run of the commands, with
- % their <overlay>, [phrase], and {key}, at the end of the title,
- % spaces and all; or one of them anywhere else, spaces kept.
+ % The pieces of one command: its name, an optional <overlay>, an
+ % optional [phrase], and the {key}.  A phrase or key may hold brace
+ % groups one level deep, as in [\emph{x}] or {a{b}}; a lazy .*? would
+ % instead run on to the title's last closing brace.
+\tl_const:Nn \c__mermin_overlay_tl { (?: \< \c[^BE][^\>]* \> )? }
+\tl_const:Nn \c__mermin_phrase_tl
+  { (?: \[ (?: \c[^BE][^\]] | \cB. \c[^BE]* \cE. )* \] )? }
+\tl_const:Nn \c__mermin_key_tl
+  { \cB. (?: \c[^BE]. | \cB. \c[^BE]* \cE. )* \cE. }
+\cs_new:Npn \__mermin_aka_one:n #1
+  {
+    \exp_not:n { \c{(?:#1)} }
+    \exp_not:V \c__mermin_overlay_tl
+    \exp_not:V \c__mermin_phrase_tl
+    \exp_not:V \c__mermin_key_tl
+  }
+ % A run of the commands at the end of the title goes with the spaces
+ % around it; one anywhere else goes alone, and its spaces stay.
 \cs_new:Npn \__mermin_aka_pattern:n #1
   {
-    \exp_not:n
-      {
-        \s* (?: \c{(?:#1)} (?: \< .*? \> )? (?: \[ .*? \] )?
-          \cB. .*? \cE. \s* )+ \Z
-        | \c{(?:#1)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE.
-      }
+    \exp_not:n { \s* (?: } \__mermin_aka_one:n {#1}
+    \exp_not:n { \s* )+ \Z | } \__mermin_aka_one:n {#1}
   }
 \exp_args:NNx \regex_const:Nn \c__mermin_aka_regex
   { \__mermin_aka_pattern:n { aka|alsolabel|mermin@alsolabel } }

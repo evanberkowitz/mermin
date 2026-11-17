@@ -36,6 +36,9 @@ PREFIX: \eq{eq:prefixed}; \eq{texted}.
 \begin{equation} k=12 \label{key} \end{equation}
 KEY: \eq{key}.
 % An \aka inside a title keeps the spaces around it in nameref's name.
-\section{Chiral \aka{chiral}fermions}
+\section{Chiral \aka{chiral}fermions in \emph{two dimensions}}
 \ifdefined\nameref NAMESPACE: \nameref*{chiral}.\fi
+% A caption that starts with \aka and ends in a brace group.
+\begin{figure}[h]\caption{\aka{fig:cited}Phase diagram, after \emph{Smith}}\end{figure}
+\ifdefined\nameref NAMECAP: \nameref*{fig:cited}.\fi
 \end{document}
