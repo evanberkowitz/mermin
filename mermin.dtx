@@ -209,6 +209,12 @@
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
 %
+% \DescribeMacro{\eqcite}
+% \cs{eqcite} is the same command under a name no other package uses.
+% Several packages, among them \textsf{nccmath}, define their own \cs{eq}.
+% When one of them is loaded, \textsf{mermin} leaves its \cs{eq} alone,
+% says so in a warning, and the document cites equations with \cs{eqcite}.
+%
 % \section{Compatibility}
 %
 % The package works in the \textsf{amsmath} environments \textsf{equation},
@@ -559,8 +565,8 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\eq}
-% \cs{eq} resolves its argument to a key: the argument itself, unless only
+% \begin{macro}{\eqcite}
+% \cs{eqcite} resolves its argument to a key: the argument itself, unless only
 % |eq:|\meta{phrase} is defined, in which case that key is used.
 % Before the first run defines any label, the key is the argument itself,
 % so the usual undefined-reference warning names it.
@@ -569,13 +575,13 @@
 % if none was recorded, a tie, and the equation number from \cs{eqref},
 % which \textsf{hyperref} makes a link.
 %    \begin{macrocode}
-\NewDocumentCommand\eq{m}{%
+\NewDocumentCommand\eqcite{m}{%
   \mermin@eq@key{#1}%
   \@ifundefined{r@\mermin@key}{}{%
     \@ifundefined{mermin@eq@\mermin@key}{%
-      \PackageWarning{mermin}{\string\eq{#1} cites a label that is not
-        an equation;\MessageBreak \string\eq\space prints a parenthesized
-        equation number}}{}}%
+      \PackageWarning{mermin}{`#1' is not an equation label, but
+        \string\eq\space prints\MessageBreak a parenthesized equation
+        number}}{}}%
   \@ifundefined{mermin@ph@\mermin@key}%
     {#1}%
     {\csname mermin@ph@\mermin@key\endcsname}%
@@ -586,6 +592,24 @@
   \@ifundefined{r@#1}{%
     \@ifundefined{r@eq:#1}{}{\def\mermin@key{eq:#1}}%
   }{}%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\eq}
+% The short name \cs{eq} is also defined by other packages, among them
+% \textsf{nccmath}.
+% It is therefore assigned only at |begindocument/end|, after every
+% package has had the chance to define it, and only if it is still free.
+% Otherwise the other package keeps \cs{eq} and the user is told to write
+% \cs{eqcite}.
+%    \begin{macrocode}
+\AddToHook{begindocument/end}{%
+  \@ifundefined{eq}%
+    {\NewCommandCopy\eq\eqcite}%
+    {\PackageWarningNoLine{mermin}{\string\eq\space was already defined,
+      probably by another\MessageBreak package, and is left alone; write
+      \string\eqcite\space instead}}%
 }
 %</package>
 %    \end{macrocode}

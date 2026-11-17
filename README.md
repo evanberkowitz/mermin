@@ -42,7 +42,8 @@ need no change. A phrase that cannot be a key, such as one with math, is
 given once where the label is defined, `\alsolabel[$\Gamma$ action]{Gamma action}`,
 and cited as `\eq{Gamma action}`, which prints "Γ action (n)". `\eq` is for
 equations only and warns when its key names a section, figure, or anything
-else.
+else. Some packages, such as nccmath, define their own `\eq`; mermin then
+leaves it alone, warns, and the same command is available as `\eqcite`.
 
 The full documentation, including Mermin's three rules and the
 annotated implementation, is `mermin.pdf`.
@@ -73,7 +74,7 @@ Requires a LaTeX format from 2020-10-01 or later, and amsmath.
 ## Testing
 
 ```sh
-make test
+make test                    # or ENGINE=lualatex, ENGINE=xelatex
 ```
 
 typesets every supported environment, with the keys in every order, in four
@@ -81,8 +82,11 @@ package configurations (amsmath alone; with hyperref; with hyperref and
 cleveref; and with mermin loaded first), and checks that every key in each
 `.aux` file resolves to its line's number and anchor. It also checks the
 text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
-`\alsolabel`, and non-ASCII phrases, and that `\eq` warns exactly when it
-cites something other than an equation.
+`\alsolabel`, and non-ASCII phrases. Finally, it checks that `\eq` warns
+exactly when it cites something other than an equation, and that
+`\eqcite` takes over when another package owns `\eq`. GitHub Actions runs the suite with pdfLaTeX,
+LuaLaTeX, and XeLaTeX on the current TeX Live, and with pdfLaTeX on TeX
+Live 2021, the oldest supported LaTeX.
 
 ## License
 
