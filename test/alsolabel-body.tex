@@ -1,0 +1,39 @@
+% Each group "gN-..." must resolve to one number; groups must differ.
+\section{Displays}
+\begin{equation} a=1 \label{g1-a} \alsolabel{g1-b} \alsolabel{g1-c} \end{equation}
+\begin{equation} a=2 \alsolabel{g2-a} \label{g2-b} \alsolabel{g2-c} \end{equation}
+\begin{equation} a=3 \alsolabel{g3-a} \alsolabel{g3-b} \end{equation}
+\begin{equation} a=4 \label{g4-a} \end{equation}
+\begin{align}
+  b&=1 \label{g5-a} \alsolabel{g5-b}\\
+  b&=2 \notag\\
+  b&=3 \alsolabel{g6-a} \alsolabel{g6-b}\\
+  b&=4 \alsolabel{g7-a} \label{g7-b}
+\end{align}
+\begin{gather}
+  c=1 \label{g8-a} \alsolabel{g8-b}\\
+  c=2 \alsolabel{g9-a}
+\end{gather}
+\begin{multline}
+  d = 1 \\ + 2 \label{g10-a} \alsolabel{g10-b}
+\end{multline}
+\begin{equation}
+  \begin{split} e &= 1\\ &= 2 \end{split}
+  \alsolabel{g11-a} \label{g11-b}
+\end{equation}
+\begin{subequations}\label{g12-a}\alsolabel{g12-b}
+\begin{align}
+  f&=1 \label{g13-a}\alsolabel{g13-b}\\
+  f&=2 \alsolabel{g14-a}
+\end{align}
+\end{subequations}
+\begin{empheq}[left=\empheqlbrace]{align}
+  g&=1 \label{g15-a}\alsolabel{g15-b}\\
+  g&=2 \alsolabel{g16-a}\label{g16-b}
+\end{empheq}
+\begin{equation*} h=0 \end{equation*}
+\begin{equation} i=1 \alsolabel{g17-a}\label{g17-b} \end{equation}
+Outside a display: \alsolabel{g18-a}.
+\section{Refs} \alsolabel{g19-a}\label{g19-b}
+\eqref{g1-a}\eqref{g1-b}\eqref{g1-c}
+\eqref{g3-a}\eqref{g6-b}\eqref{g10-b}\eqref{g16-a}\ref{g18-a}\ref{g19-a}
