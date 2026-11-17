@@ -37,7 +37,7 @@ check:
 	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null || { echo "rerun: LaTeX error"; exit 1; }
 	@pdftotext rerun-edit.pdf - | grep -q 'new phrase (1)' || { echo "rerun: the new phrase was not printed"; exit 1; }
 	@# Removing a typeset phrase must also make LaTeX ask for another run.
-	@sed -i.bak 's/\[new phrase\]//' rerun-edit.tex && rm -f rerun-edit.tex.bak
+	@sed -i.bak 's/\\aka\[new phrase\]{K}/\\label{K}/' rerun-edit.tex && rm -f rerun-edit.tex.bak
 	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null || { echo "rerun: LaTeX error after removing the phrase"; exit 1; }
 	@grep -q 'Label(s) may have changed' rerun-edit.log || { echo "rerun: no rerun request after a phrase was removed"; exit 1; }
 	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null || { echo "rerun: LaTeX error"; exit 1; }
@@ -47,7 +47,7 @@ check:
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error xr-supp >/dev/null || { echo "xr-supp: LaTeX error"; exit 1; }; done
 	@for c in xr-before xr-after; do \
 	  for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
-	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
+	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
 	  ! grep -q 'mermin Warning\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
 	done
 	@printf '%s\n' 'xr checks pass'
@@ -60,7 +60,17 @@ check:
 	@# stop the first run.
 	@rm -f firstrun.aux
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error firstrun >/dev/null || { echo "firstrun: LaTeX error on run $$i"; exit 1; }; done
-	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -q 'See the E field (1)\.' || { echo "firstrun: wrong citation"; exit 1; }
+	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'See the E field (1).' || { echo "firstrun: wrong citation"; exit 1; }
+	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'The H_0 (2) holds.' || { echo "firstrun: unprintable key not printed verbatim"; exit 1; }
+	@grep -q "mermin Warning: .H_0' has no typeset phrase" firstrun.log || { echo "firstrun: no warning for an unprintable key"; exit 1; }
+	@# A paper that adopts mermin has an .aux without equation marks: no
+	@# warnings until mermin has written one.
+	@printf '%s\n' '\relax' '\newlabel{anomaly}{{1}{1}}' '\newlabel{fig:x}{{1}{1}}' > adopt.aux
+	@$(ENGINE) -interaction=nonstopmode -halt-on-error adopt >/dev/null || { echo "adopt: LaTeX error"; exit 1; }
+	@! grep -q 'mermin Warning' adopt.log || { echo "adopt: warnings from an .aux mermin did not write"; exit 1; }
+	@# beamer: \aka<overlay> in a display drops the overlay.
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error beamer >/dev/null || { echo "beamer: LaTeX error"; exit 1; }; done
+	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
 	@printf '%s\n' 'first-run checks pass'
 	@# Moving arguments, bookmarks, keys with & and macros, \eq in math, and
 	@# equations of cases, IEEEtrantools, and eqnarray.
@@ -70,6 +80,7 @@ check:
 	  ! grep -q 'mermin Warning\|undefined\|multiply\|may have changed\|Token not allowed' $$c.log || { echo "$$c: warnings"; exit 1; }; \
 	  ! grep -q 'aka' $$c.toc $$c.lof || { echo "$$c: \\aka written to the contents"; exit 1; }; \
 	  pdftotext $$c.pdf - | tr '\n' ' ' | grep -qF 'EDGE: Maxwell & Faraday (2); mass phrase (3); sec2:energy (3); numcases line (4); IEEE line (6); eqnarray line (7); 1; 1.' || { echo "$$c: wrong citations"; exit 1; }; \
+	  pdftotext $$c.pdf - | grep -qF 'MIXED: mixed phrase (9).' || { echo "$$c: a key given twice on one line"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
 	done
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
@@ -88,4 +99,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn firstrun edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn firstrun adopt beamer edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex

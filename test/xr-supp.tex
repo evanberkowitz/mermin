@@ -1,5 +1,8 @@
 \documentclass{article}
 \usepackage{amsmath}\usepackage{hyperref}\usepackage{mermin}
 \begin{document}
+% \eq and \aka in a title reach the .aux that xr reads in the preamble.
+\section{The \eq{S2}\aka{sec alias}}
 \begin{equation} s=1 \label{S1} \aka[$\Gamma$ act]{S2} \end{equation}
+\begin{equation} t=2 \label{plain} \end{equation}
 \end{document}

@@ -35,8 +35,9 @@ prints "the anomaly condition (1)" and "the Pythagorean condition (1)".
 replace it entirely. Every key gets the line's number and hyperref anchor,
 and `\ref`, `\eqref`, `\pageref`, and `\cref` all work. It supports the
 amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
-`subequations`) and `empheq`, with hyperref and cleveref loaded in any
-order. `\label` itself is unchanged.
+`subequations`), `empheq`, breqn, the cases package, IEEEtrantools'
+`IEEEeqnarray`, and `eqnarray`, with hyperref and cleveref loaded in any
+order, and works with xr and xr-hyper. `\label` itself is unchanged.
 
 `\eq{phrase}` falls back to the label `eq:phrase`, so existing `eq:` labels
 need no change. A phrase that cannot be a key, such as one with math, is
