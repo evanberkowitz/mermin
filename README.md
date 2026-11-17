@@ -32,7 +32,7 @@ condition~\eqref{eq:pythagorean}.
 
 `\alsolabel` may come before or after `\label`, any number of times, or
 replace it entirely. Every key gets the line's number and hyperref anchor,
-and `\ref`, `\eqref`, `\pageref` and `\cref` all work. It supports the
+and `\ref`, `\eqref`, `\pageref`, and `\cref` all work. It supports the
 amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
 `subequations`) and `empheq`, with hyperref and cleveref loaded in any
 order. `\label` itself is unchanged.
@@ -71,7 +71,7 @@ make test
 
 typesets every supported environment, with the keys in every order, in four
 package configurations (amsmath alone; with hyperref; with hyperref and
-cleveref; with mermin loaded first), and checks that every key in each
+cleveref; and with mermin loaded first), and checks that every key in each
 `.aux` file resolves to its line's number and anchor.
 
 ## License
