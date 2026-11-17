@@ -10,8 +10,9 @@ Version 0.1, 2026/11/16.
 
 Mermin's Good Samaritan rule asks that every equation be cited by a noun
 phrase as well as its number: "the anomaly condition (3)", never a bare
-"(3)". This package makes the phrase the label. `\aka{phrase}` ("also known as") gives
-an equation, or one line of an `align`, as many phrases as the prose needs,
+"(3)". This package makes the phrase the label. `\aka{phrase}` ("also
+known as") gives an equation, or one line of an `align`, as many phrases as
+the prose needs,
 and `\eq{phrase}` cites it by one of them, printing the phrase and the
 linked number:
 
@@ -65,13 +66,14 @@ annotated implementation, is `mermin.pdf`.
 ## Installation
 
 ```sh
-make            # tex mermin.ins, then pdflatex mermin.dtx with its indexes
+tex mermin.ins          # generates mermin.sty
 ```
 
-Then either copy `mermin.sty` to `$(kpsewhich -var-value TEXMFHOME)/tex/latex/mermin/`,
-or point a paper's build at this directory with `TEXINPUTS=/path/to/mermin:`.
-Without make, run `tex mermin.ins` for the package and `pdflatex mermin.dtx`
-twice for the manual.
+Then copy `mermin.sty` to `$(kpsewhich -var-value TEXMFHOME)/tex/latex/mermin/`,
+or next to the paper that uses it. To typeset the manual, run
+`pdflatex mermin.dtx` twice. In a clone of the repository, `make` does both
+and builds the index, and a paper's build can use the clone directly with
+`TEXINPUTS=/path/to/mermin:`.
 
 Requires a LaTeX format from 2020-10-01 or later, and amsmath.
 
@@ -94,8 +96,9 @@ cleveref; and with mermin loaded first), and checks that every key in each
 text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
 `\aka`, and non-ASCII phrases. Finally, it checks that `\eq` warns
 exactly when it cites something other than an equation, and that
-`\eqcite` and `\alsolabel` take over when `\eq` or `\aka` is already taken. GitHub Actions runs the suite with pdfLaTeX,
-LuaLaTeX, and XeLaTeX on the current TeX Live; with pdfLaTeX on TeX Live
+`\eqcite` and `\alsolabel` take over when `\eq` or `\aka` is already
+taken. GitHub Actions runs the suite with pdfLaTeX, LuaLaTeX, and XeLaTeX
+on the current TeX Live; with pdfLaTeX on TeX Live
 2023 and 2025, the versions arXiv uses; and with pdfLaTeX on TeX Live 2021,
 the oldest supported LaTeX.
 

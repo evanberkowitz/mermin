@@ -174,14 +174,15 @@
 % \cs{aka}, and every citation then uses the plain key.
 % For example, a compact boson on a lattice may be given the Villain action
 % \begin{equation}
-%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
+%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2.
 %   \aka[$\Gamma$ action]{Gamma action}
 %   \aka{Villain model}
 % \end{equation}
-% from the source
+% The source of this display, and of a paragraph that cites it by both
+% phrases, reads
 % \begin{verbatim}
 % \begin{equation}
-%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2,
+%   S_\Gamma=\frac{\beta}{2}\sum_{\ell}\left(d\phi-2\pi n\right)_\ell^2.
 %   \aka[$\Gamma$ action]{Gamma action}
 %   \aka{Villain model}
 % \end{equation}
@@ -191,7 +192,7 @@
 % Summed over $n$, the \eq{Villain model} is a periodic function
 % of each $d\phi_\ell$.
 % \end{verbatim}
-% and the citations typeset as
+% and typesets as
 % \begin{quote}
 % The integer field $n$ makes the \eq{Gamma action} invariant
 % under $\phi\to\phi+2\pi k$ with $n\to n+dk$.
@@ -242,6 +243,11 @@
 % given in every order, in four package configurations, and checks that
 % each key in the resulting \texttt{.aux} file carries its line's number
 % and anchor.
+% It also checks the text \cs{eq} prints, that \cs{eq} warns exactly when
+% it cites something other than an equation, and that \cs{alsolabel} and
+% \cs{eqcite} take over when \cs{aka} and \cs{eq} are taken.
+% The suite runs with pdf\LaTeX, Lua\LaTeX, and Xe\LaTeX\ on the current
+% \TeX\ Live, and with pdf\LaTeX\ on \TeX\ Live 2021, 2023, and 2025.
 %
 % \begin{thebibliography}{1}
 % \bibitem{mermin}
@@ -274,6 +280,11 @@
 % Third, \cs{alsolabel} may come before \cs{label} or without it.
 % It then occupies |\df@label| itself, and a later \cs{label} reclaims the
 % slot and moves the earlier key into the queue.
+%
+% Two further records travel through the \texttt{.aux} file, like labels
+% themselves, so that a citation may precede its equation: the typeset
+% phrases given to \cs{alsolabel}, and the keys that belong to equations,
+% which \cs{eqcite} consults before warning.
 %
 %    \begin{macrocode}
 %<*package>
