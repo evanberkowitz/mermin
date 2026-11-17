@@ -238,6 +238,13 @@
 % \texttt{mermin.sty} among its files.
 % With the \textsf{mathtools} option |showonlyrefs|, a line is numbered
 % when any of its keys is cited.
+% \textsf{breqn}'s |dmath| and |dseries| are supported.
+% So are \textsf{xr} and \textsf{xr-hyper}: |\eq{S-|\meta{key}|}| cites an
+% equation of a document loaded with |\externaldocument[S-]|, and prints
+% its phrase; a key without a typeset phrase prints with its prefix, so
+% such keys are best given one.
+% \textsf{autonum} is not supported: it copies \cs{label} before this
+% package can extend it, and numbers a line by its first key only.
 % Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
 % equations, so \cs{eq} warns about them; \textsf{align} replaces it.
 %
@@ -346,6 +353,8 @@
 % \begin{macro}{\mermin@newphrase}
 % A typeset phrase travels through the \texttt{.aux} file, like the label
 % itself, so that \cs{eq} can print it before or after the definition.
+% When \LaTeX\ rereads the \texttt{.aux} file at the end of the document to
+% look for changed labels, a changed phrase also asks for another run.
 % |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}| defines
 % |\mermin@ph@|\meta{key}.
 % The phrase does not depend on the page, so it is written immediately;
@@ -359,7 +368,11 @@
       \string\mermin@newphrase{\unexpanded{#1}}{\unexpanded{#2}}}%
   \fi}
 \def\mermin@newphrase#1#2{%
-  \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}}
+  \ifx\@newl@bel\@testdef
+    \@testdef{mermin@ph}{#1}{#2}%
+  \else
+    \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}%
+  \fi}
 \AtBeginDocument{%
   \if@filesw
     \immediate\write\@auxout{%
@@ -390,6 +403,35 @@
 % \end{macro}
 % \end{macro}
 %
+% \begin{macro}{\mermin@xr@test}
+% \textsf{xr} and \textsf{xr-hyper} import another document's labels, as
+% for a paper and its supplement, by reading that document's \texttt{.aux}
+% file a line at a time with |\XR@test|, which keeps only \cs{newlabel} and
+% \cs{bibcite} lines.
+% The wrapper also imports the records of equation keys and phrases, with
+% the external document's prefix added to each key.
+% It is installed once, whether \textsf{xr} is loaded before or after this
+% package.
+%    \begin{macrocode}
+\long\def\mermin@xr@test#1#2#3#4\XR@{%
+  \ifx#1\mermin@equation
+    \mermin@equation{\XR@prefix#2}%
+  \else\ifx#1\mermin@newphrase
+    \mermin@newphrase{\XR@prefix#2}{#3}%
+  \fi\fi
+  \mermin@xr@orig#1{#2}{#3}#4\XR@}
+\def\mermin@xr@patch{%
+  \ifdefined\mermin@xr@orig\else
+    \let\mermin@xr@orig\XR@test
+    \let\XR@test\mermin@xr@test
+  \fi}
+\AddToHook{package/xr/after}{\mermin@xr@patch}
+\AddToHook{package/xr-hyper/after}{\mermin@xr@patch}
+\@ifpackageloaded{xr}{\mermin@xr@patch}{}
+\@ifpackageloaded{xr-hyper}{\mermin@xr@patch}{}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\mermin@markargs}
 % Keys are recorded as equations where an \textsf{amsmath} display
 % registers them, in |\label@in@display|, and not where labels are
@@ -410,15 +452,24 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\mermin@sub@label}
+% \begin{macro}{\mermin@marklabels}
 % The label of a \textsf{subequations} group, numbered like ``(12)'', is
-% an ordinary \cs{label} between the displays, so inside the group
-% \cs{label} also records its key.
-% The displays within the group install their own \cs{label}.
+% an ordinary \cs{label} between the displays, and the displays of
+% \textsf{breqn}, |dmath| and |dseries|, use the ordinary \cs{label} too.
+% Inside these environments \cs{label} therefore also records its key.
+% The \textsf{amsmath} displays within them install their own \cs{label},
+% and an environment nested in another, such as |dmath| in |dgroup| or in
+% \textsf{subequations}, finds \cs{label} already wrapped and leaves it.
 %    \begin{macrocode}
-\AddToHook{env/subequations/begin}{%
-  \let\mermin@sub@orig\label
-  \def\label{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}}
+\def\mermin@marklabels{%
+  \ifx\label\mermin@marklabel\else
+    \let\mermin@sub@orig\label
+    \let\label\mermin@marklabel
+  \fi}
+\def\mermin@marklabel{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}
+\AddToHook{env/subequations/begin}{\mermin@marklabels}
+\AddToHook{env/dmath/begin}{\mermin@marklabels}
+\AddToHook{env/dseries/begin}{\mermin@marklabels}
 \def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
 \def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
 %    \end{macrocode}

@@ -28,6 +28,28 @@ check:
 	@pdftotext showonlyrefs.pdf - | tr '\n' ' ' | grep -q 'See (1), (2), (3)\.' || { echo "showonlyrefs: aliases did not number their lines"; exit 1; }
 	@! pdftotext showonlyrefs.pdf - | grep -q '(4)' || { echo "showonlyrefs: an uncited line was numbered"; exit 1; }
 	@printf '%s\n' 'showonlyrefs checks pass'
+	@# A changed typeset phrase must make LaTeX ask for another run.
+	@cp rerun.tex rerun-edit.tex
+	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null; $(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null
+	@sed -i.bak 's/old phrase/new phrase/' rerun-edit.tex && rm -f rerun-edit.tex.bak
+	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null
+	@grep -q 'Label(s) may have changed' rerun-edit.log || { echo "rerun: no rerun request after a phrase changed"; exit 1; }
+	@$(ENGINE) -interaction=nonstopmode -halt-on-error rerun-edit >/dev/null
+	@pdftotext rerun-edit.pdf - | grep -q 'new phrase (1)' || { echo "rerun: the new phrase was not printed"; exit 1; }
+	@printf '%s\n' 'rerun checks pass'
+	@# xr and xr-hyper import phrases and equation keys from another document.
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error xr-supp >/dev/null; done
+	@for c in xr-before xr-after; do \
+	  for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
+	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
+	  ! grep -q 'mermin Warning\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
+	done
+	@printf '%s\n' 'xr checks pass'
+	@# breqn's displays are equations: no warnings, right numbers.
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error breqn >/dev/null || { echo "breqn: LaTeX error"; exit 1; }; done
+	@! grep -q 'mermin Warning\|undefined\|multiply' breqn.log || { echo "breqn: warnings"; exit 1; }
+	@pdftotext breqn.pdf - | tr '\n' ' ' | grep -q 'BREQN: A (1) A two (1) D (2) G (3a) G two (3a)\.' || { echo "breqn: wrong citations"; exit 1; }
+	@printf '%s\n' 'breqn checks pass'
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs,$c.aux $c.log $c.out $c.pdf $c.toc)
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-before xr-after breqn,$c.aux $c.log $c.out $c.pdf $c.toc) rerun-edit.tex
