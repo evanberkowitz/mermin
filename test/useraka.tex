@@ -1,0 +1,8 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{hyperref}\usepackage{mermin}
+% The document's own \aka: mermin leaves it alone, nameref included.
+\newcommand\aka[1]{(a.k.a.\ #1)}
+\begin{document}
+\section{The XY model \aka{the O(2) model}}\label{xy}
+USERAKA: \nameref{xy}.
+\end{document}

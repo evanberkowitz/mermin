@@ -271,7 +271,12 @@
 % its phrase, or its key without the prefix; the |eq:| fallback reaches
 % it too, so |\eq{S-sum rule}| cites |\label{eq:sum rule}| there.
 % Load \textsf{mermin} before calling \cs{externaldocument}: a document
-% read earlier is imported without its phrases.
+% read earlier is imported without its phrases or its record of which
+% labels are equations, so its keys print with the prefix, the |eq:|
+% fallback does not reach it, and \cs{eq} warns about every one.
+% A paper that adopts \textsf{mermin} while \cs{includeonly} leaves out
+% chapters may see such warnings for equations in those chapters, until
+% each is compiled once with the package.
 % A document that does not use \textsf{mermin} has no record of which
 % labels are equations, so \cs{eq} treats all of them as equations.
 % \textsf{autonum} is not supported: it copies \cs{label} before this
@@ -415,6 +420,9 @@
 % itself, so that \cs{eq} can print it before or after the definition.
 % When \LaTeX\ rereads the \texttt{.aux} file at the end of the document to
 % look for changed labels, a changed phrase also asks for another run.
+% The reread is recognized by |\@setckpt|, which the kernel (and
+% REVTeX) makes |\@gobbletwo| only then; |\@newl@bel| is not reliable,
+% since packages such as \textsf{acronym} change it during the reread.
 % |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}| defines
 % |\mermin@ph@|\meta{key}.
 % The phrase does not depend on the page, so it is written immediately;
@@ -441,7 +449,7 @@
   \fi}
 \def\mermin@newphrase#1#2{%
   \global\let\mermin@marked\@empty
-  \ifx\@newl@bel\@testdef
+  \ifx\@setckpt\@gobbletwo
     \global\@namedef{mermin@seen@#1}{}%
     \edef\reserved@a{\detokenize{#2}}%
     \edef\reserved@b{\detokenize\@xp\@xp\@xp
@@ -496,6 +504,7 @@
       \string\providecommand\string\mermin@newphrase[2]{}%
       \string\providecommand\string\mermin@equation[1]{}%
       \string\providecommand\string\mermin@auxmark{}}%
+    \immediate\write\@partaux{\string\mermin@auxmark}%
   \fi}
 %    \end{macrocode}
 % \end{macro}
@@ -858,11 +867,20 @@
 }
 \def\mermin@phrasemeta{<phrase>}
 \ExplSyntaxOn
+\regex_const:Nn \c__mermin_long_regex
+  { \s* \c{(?:alsolabel|mermin@alsolabel)}
+    (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
 \regex_const:Nn \c__mermin_aka_regex
   { \s* \c{(?:aka|alsolabel|mermin@alsolabel)}
     (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
 \cs_new_protected:Npn \mermin@stripaka
-  { \regex_replace_all:NnN \c__mermin_aka_regex { } \GetTitleStringResult }
+  {
+    \ifx \aka \mermin@alsolabel@short
+      \regex_replace_all:NnN \c__mermin_aka_regex { } \GetTitleStringResult
+    \else
+      \regex_replace_all:NnN \c__mermin_long_regex { } \GetTitleStringResult
+    \fi
+  }
 \ExplSyntaxOff
 \def\mermin@ifeqprefix#1{%
   \@xp\mermin@ifeqprefix@\detokenize{#1}\relax\relax\relax\mermin@nil}
