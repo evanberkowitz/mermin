@@ -4,7 +4,8 @@
 \section{Methods\aka{methods}}
 \begin{equation} a=1 \label{anomaly condition} \aka[$\Gamma$ action]{Gamma action} \end{equation}
 \section{On the \eq{anomaly condition}}
-\MakeUppercase{An uppercased heading\aka{upper key}}
+% Before 2022-06 \MakeUppercase uppercases every key, \label's included.
+\IfFormatAtLeastTF{2022-06-01}{\MakeUppercase{An uppercased heading\aka{upper key}}}{}
 \begin{figure}[h]\centering x\caption{A figure\label{fig:a}\aka{figure a}}\end{figure}
 \begin{align} b&=2 \aka[Maxwell \& Faraday]{Maxwell & Faraday} \end{align}
 \begin{equation} c=3 \label{sec\thesection:energy} \aka[mass phrase]{sec\thesection:mass} \end{equation}
@@ -17,7 +18,7 @@ EDGE: \eq{Maxwell & Faraday}; \eq{sec2:mass}; \eq{sec2:energy};
 \ref{methods}; \ref{figure a}.
 % One key given a phrase and also left without one must settle.
 \begin{equation} g=8 \aka[mixed phrase]{mixed} \aka{mixed} \end{equation}
-MIXED: \eq{mixed}. \ref{upper key}
+MIXED: \eq{mixed}. \IfFormatAtLeastTF{2022-06-01}{\ref{upper key}}{}
 % A phrase given before the line's \label of the same key.
 \begin{equation} h=9 \aka[order phrase]{order} \label{order} \end{equation}
 ORDER: \eq{order}.
@@ -27,4 +28,6 @@ BOTH: \eq{alias}; \eq{both}.
 % \text typesets \aka four times; an eq: key prints without its prefix.
 \begin{equation} j=11 \label{eq:prefixed} \quad\text{(\aka{texted})} \end{equation}
 PREFIX: \eq{eq:prefixed}; \eq{texted}.
+% nameref takes a title's name without the \aka in it.
+\ifdefined\nameref NAMEREF: \nameref*{methods}.\fi
 \end{document}

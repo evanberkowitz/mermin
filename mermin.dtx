@@ -219,8 +219,12 @@
 % Outside a display \cs{aka} is simply \cs{label}, so it can also
 % give a section, a figure, or a theorem a second name.
 % In \textsf{beamer}, |\aka<|\meta{overlay}|>| passes the overlay to
-% \cs{label}, as |\label<|\meta{overlay}|>| does; in a display, where
-% \textsf{amsmath}'s \cs{label} takes no overlay, the overlay is dropped.
+% \cs{label}, as |\label<|\meta{overlay}|>| does; in a display the
+% overlay of \cs{aka} or \cs{label} is dropped, and the label is on
+% every slide.
+% Put \cs{aka} in a heading or caption after its argument, not inside it,
+% when \textsf{nameref} is not loaded; with \textsf{nameref} (and so
+% \textsf{hyperref}) either place works.
 % On a line without a number, such as one with \cs{notag} or in
 % |equation*|, \cs{aka} does what \cs{label} does there, which is seldom
 % what is wanted (in \textsf{align} it labels the next numbered line);
@@ -754,7 +758,9 @@
 % optional argument passed through untouched.
 %    \begin{macrocode}
 \def\mermin@label@in@display{%
-  \@ifnextchar[\mermin@label@in@display@opt\mermin@label@in@display@noarg}
+  \@ifnextchar<\mermin@label@in@display@ov
+    {\@ifnextchar[\mermin@label@in@display@opt\mermin@label@in@display@noarg}}
+\def\mermin@label@in@display@ov<#1>{\mermin@label@in@display}
 \def\mermin@label@in@display@opt[#1]#2{\mermin@real@in@display{[#1]{#2}}}
 \def\mermin@label@in@display@noarg#1{\mermin@real@in@display{{#1}}}
 %    \end{macrocode}
@@ -831,7 +837,8 @@
         {\mermin@ifunprintable{#1}{\mermin@verbatim{#1}}{#1}}%
         {\@ifundefined{mermin@xrdef@\mermin@key}%
            {\def\mermin@text{#1}%
-            \mermin@stripeq\relax#1\mermin@stop eq:\mermin@stop\mermin@nil}%
+            \mermin@ifeqprefix{#1}%
+              {\@xp\def\@xp\mermin@text\@xp{\@gobblethree#1}}{}}%
            {\@xp\let\@xp\mermin@text
               \csname mermin@xrdef@\mermin@key\endcsname}%
          \@xp\mermin@ifunprintable\@xp{\mermin@text}%
@@ -850,13 +857,19 @@
    ~\@xp\eqref\@xp{\mermin@key}}%
 }
 \def\mermin@phrasemeta{<phrase>}
-\def\mermin@stripeq#1eq:#2\mermin@stop#3\mermin@nil{%
-  \def\mermin@tmp{#1}%
-  \ifx\mermin@tmp\mermin@relax\def\mermin@text{#2}\fi}
-\def\mermin@pdftext#1{%
-  \mermin@pdftext@\relax#1\mermin@stop eq:\mermin@stop\mermin@nil{#1}}
-\def\mermin@pdftext@#1eq:#2\mermin@stop#3\mermin@nil#4{%
-  \if\relax\detokenize\@xp{\@gobble#1}\relax#2\else#4\fi}
+\ExplSyntaxOn
+\regex_const:Nn \c__mermin_aka_regex
+  { \s* \c{(?:aka|alsolabel|mermin@alsolabel)}
+    (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
+\cs_new_protected:Npn \mermin@stripaka
+  { \regex_replace_all:NnN \c__mermin_aka_regex { } \GetTitleStringResult }
+\ExplSyntaxOff
+\def\mermin@ifeqprefix#1{%
+  \@xp\mermin@ifeqprefix@\detokenize{#1}\relax\relax\relax\mermin@nil}
+\def\mermin@ifeqprefix@#1#2#3#4\mermin@nil{%
+  \ifnum\if e#1\if q#2\if :#3 1\else 0\fi\else 0\fi\else 0\fi=1
+    \@xp\@firstoftwo\else\@xp\@secondoftwo\fi}
+\def\mermin@pdftext#1{\mermin@ifeqprefix{#1}{\@gobblethree#1}{#1}}
 \def\mermin@akacs{\string\alsolabel}
 \def\mermin@eqcs{\string\eqcite}
 \def\mermin@verbatim#1{{\normalfont\ttfamily\detokenize{#1}}}
@@ -904,6 +917,11 @@
       by a package or\MessageBreak the preamble, and is left alone; write
       \string#2\space instead}}}
 \AddToHook{begindocument/end}{%
+  \ifdefined\GetTitleStringNonExpand
+    \let\mermin@gts@orig\GetTitleStringNonExpand
+    \def\GetTitleStringNonExpand#1{%
+      \mermin@gts@orig{#1}\mermin@stripaka}%
+  \fi
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
   \let\mermin@doclabel\label

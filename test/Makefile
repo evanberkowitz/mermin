@@ -75,6 +75,11 @@ check:
 	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
 	@pdftotext beamer.pdf - | grep -qF 'BSUB: (3); (4).' || { echo "beamer: overlays in subequations or multline"; exit 1; }
 	@grep -qF 'newlabel{frametext}{{2}{3}' beamer.aux || { echo "beamer: overlay outside a display"; exit 1; }
+	@pdftotext beamer.pdf - | grep -qF 'BLBL: (5).' || { echo "beamer: \\label<overlay> in a display"; exit 1; }
+	@# babel-french cannot read an .aux written by another engine.
+	@rm -f french.aux
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error french >/dev/null || { echo "french: LaTeX error"; exit 1; }; done
+	@pdftotext french.pdf - | tr '\n' ' ' | grep -qF 'FRENCH la relation (1) et la relation (1).' || { echo "french: eq: prefix with an active colon"; exit 1; }
 	@# \eq warns about non-equations even when no equation is labeled.
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error nomark >/dev/null || { echo "nomark: LaTeX error"; exit 1; }; done
 	@grep -c 'is not an equation label' nomark.log | grep -qx 2 || { echo "nomark: expected two warnings"; exit 1; }
@@ -93,6 +98,7 @@ check:
 	  pdftotext $$c.pdf - | grep -qF 'PREFIX: prefixed (12); texted (12).' || { echo "$$c: eq: prefix printed, or \\aka in \\text"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
 	done
+	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMEREF: Methods.' || { echo "edge-cleveref: \\nameref of a title with \\aka"; exit 1; }
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
 	@printf '%s\n' 'edge-case checks pass'
 	@# A document that drops mermin must still read an excluded file's .aux.
@@ -109,4 +115,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
