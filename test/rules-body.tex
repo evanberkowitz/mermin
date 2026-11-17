@@ -1,13 +1,23 @@
 \begin{document}
+\tableofcontents
 \section{Rules}\label{sec:rules}
-% Fisher: three displays without a number.
+% Fisher: five displays without a number, each warned once (displaymath
+% included, and an align* whose only number is a cited one).
 \begin{equation*} a=b \end{equation*}
 \[ c=d \]
 \begin{align} e&=f \notag \\ g&=h \notag \end{align}
-% Not warned: a derivation numbered on its last line, and a \tag.
+\begin{displaymath} m=n \end{displaymath}
+\begin{align*} p&=q && \text{by \eq{chain}} \end{align*}
+% Not warned: a derivation numbered on its last line, a \tag, and a
+% numbered empheq.
 \begin{align} f&=g \nonumber\\ &=h \nonumber\\ &=j \label{chain} \end{align}
 \begin{equation} k=l \tag{$\star$} \end{equation}
-% Good Samaritan: two citations by number alone (\eqref and \cref of an
-% equation); \eq, and \cref of a section, are fine.
-RULES: \eqref{chain}; \cref{chain,sec:rules}; \eq{chain}.
+\begin{empheq}{align} r&=s \label{emp} \end{empheq}
+% Good Samaritan, each warned once: a heading (not again from the table
+% of contents), \eqref, \cref of an equation, and \eqref inside a
+% numbered align (not again in its measuring pass).  Not warned: \eq,
+% \cref of a section, and \cpageref.
+\section{About \eqref{chain}}
+\begin{align} t&=u \quad\text{cf. \eqref{chain}} \label{inner} \end{align}
+RULES: \eqref{chain}; \cref{chain,sec:rules}; \eq{chain}; \cpageref{chain}.
 \end{document}

@@ -1,0 +1,10 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}
+% A document that copies \eqref with \let and redefines it, as refcheck
+% does: the Good Samaritan wrapper must not make them call each other.
+\let\oldeqref\eqref
+\renewcommand{\eqref}[1]{Eq.~\oldeqref{#1}}
+\begin{document}
+\begin{equation} a=b \label{x} \end{equation}
+LETREF: see \eqref{x}.
+\end{document}
