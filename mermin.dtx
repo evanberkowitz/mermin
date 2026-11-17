@@ -20,17 +20,17 @@
 %<*driver>
 \ProvidesFile{mermin.dtx}
 %</driver>
-%<package>\NeedsTeXFormat{LaTeX2e}[2020/10/01]
+%<package>\NeedsTeXFormat{LaTeX2e}[2021/11/15]
 %<package>\ProvidesPackage{mermin}
 %<*package>
-    [2026/11/16 v0.1 Mermin-style equation tools]
+    [2026/11/17 v0.1 Mermin-style equation tools]
 %</package>
 %
 %<*driver>
 \documentclass{ltxdoc}
 \usepackage{amsmath}
 \usepackage{mermin}
-\usepackage[hidelinks]{hyperref}
+\PassOptionsToPackage{hidelinks}{hyperref}
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
@@ -43,9 +43,7 @@
 %</driver>
 % \fi
 %
-% \CheckSum{0}
-%
-% \changes{v0.1}{2026/11/16}{Initial version, providing \cs{aka} (\cs{alsolabel}) and \cs{eq} (\cs{eqcite}).}
+% \changes{v0.1}{2026/11/17}{Initial version, providing \cs{aka} (\cs{alsolabel}) and \cs{eq} (\cs{eqcite}).}
 %
 % \GetFileInfo{mermin.sty}
 %
@@ -167,10 +165,12 @@
 %
 % Labels written with an |eq:| prefix, as many papers already have, need
 % no change: when no label \meta{phrase} exists, \cs{eq} uses
-% |eq:|\meta{phrase}, so |\eq{shift relation}| cites
+% |eq:|\meta{phrase}.
+% For example, |\eq{shift relation}| cites the line labeled
 % |\label{eq:shift relation}|.
 % \cs{eq} prints its argument as the phrase, so a key that is not
-% printable text, such as |E_field|, also needs a phrase.
+% printable text, such as |E_field|, also needs a phrase; until a run has
+% recorded it, \cs{eq} prints the key verbatim.
 % A phrase that cannot be a key, because it contains mathematics or a
 % command, is given where the label is defined, as the optional argument of
 % \cs{aka}, and every citation then uses the plain key.
@@ -231,8 +231,8 @@
 % \textsf{subequations}, and in \textsf{empheq}.
 % It works with \textsf{hyperref} and \textsf{cleveref} loaded either
 % before or after it.
-% It requires a \LaTeX\ format from 2020-10-01 or later, for the
-% |begindocument/end| hook.
+% It requires a \LaTeX\ format from 2021-11-15 or later, for the
+% hooks it uses.
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
 % do not receive new packages, so a paper submitted there should include
 % \texttt{mermin.sty} among its files.
@@ -244,13 +244,15 @@
 % its phrase; a key without a typeset phrase prints with its prefix, so
 % such keys are best given one.
 % \textsf{autonum} is not supported: it copies \cs{label} before this
-% package can extend it, and numbers a line by its first key only.
+% package can attach its extra keys, and numbers a line by its first key only.
 % Labels in the \LaTeX\ kernel's \textsf{eqnarray} are not recognized as
 % equations, so \cs{eq} warns about them; \textsf{align} replaces it.
 %
-% The repository that holds this package also holds a test suite.
-% Running |make test| typesets every environment above, with the keys
-% given in every order, in four package configurations, and checks that
+% The package's repository,
+% \url{https://github.com/evanberkowitz/mermin}, also holds a test suite
+% and the issue tracker.
+% Running |make test| there typesets every environment above, with the
+% keys given before, after, and instead of \cs{label}, in four package configurations, and checks that
 % each key in the resulting \texttt{.aux} file carries its line's number
 % and anchor.
 % It also checks the text \cs{eq} prints, that \cs{eq} warns exactly when
@@ -261,7 +263,7 @@
 %
 % \begin{thebibliography}{1}
 % \bibitem{mermin}
-%   N.~D. Mermin, ``What's wrong with these equations?'',
+%   N.~D. Mermin, ``What's Wrong with These Equations?'',
 %   \emph{Physics Today} \textbf{42}(10), 9 (1989),
 %   \href{https://doi.org/10.1063/1.2811173}{doi:10.1063/1.2811173}.
 % \end{thebibliography}
@@ -664,7 +666,9 @@
 % \cs{eqcite} resolves its argument to a key: the argument itself, unless only
 % |eq:|\meta{phrase} is defined, in which case that key is used.
 % Before the first run defines any label, the key is the argument itself,
-% so the usual undefined-reference warning names it.
+% so the usual undefined-reference warning names it, and the argument is
+% printed verbatim: it may be a key such as |E_field| whose phrase is not
+% yet known, and would stop the run if typeset.
 % It warns if the key is defined but was not recorded as an equation.
 % It then prints the typeset phrase recorded for that key, or the argument
 % if none was recorded, a tie, and the equation number from \cs{eqref},
@@ -678,7 +682,7 @@
         \string\eq\space prints\MessageBreak a parenthesized equation
         number}}{}}%
   \@ifundefined{mermin@ph@\mermin@key}%
-    {#1}%
+    {\@ifundefined{r@\mermin@key}{\detokenize{#1}}{#1}}%
     {\csname mermin@ph@\mermin@key\endcsname}%
   ~\@xp\eqref\@xp{\mermin@key}%
 }

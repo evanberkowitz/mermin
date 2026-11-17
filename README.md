@@ -4,7 +4,7 @@ Tools for writing equations the way N. David Mermin asks in
 "What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (1989),
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
-Version 0.1, 2026/11/16.
+Version 0.1, 2026/11/17.
 
 ## Description
 
@@ -75,7 +75,7 @@ or next to the paper that uses it. To typeset the manual, run
 and builds the index, and a paper's build can use the clone directly with
 `TEXINPUTS=/path/to/mermin:`.
 
-Requires a LaTeX format from 2020-10-01 or later, and amsmath.
+Requires a LaTeX format from 2021-11-15 or later, and amsmath.
 
 ### arXiv
 
@@ -89,9 +89,10 @@ Upload `mermin.sty` alongside your `.tex` files.
 make test                    # or ENGINE=lualatex, ENGINE=xelatex
 ```
 
-typesets every supported environment, with the keys in every order, in four
-package configurations (amsmath alone; with hyperref; with hyperref and
-cleveref; and with mermin loaded first), and checks that every key in each
+typesets every supported environment, with the keys before, after, and
+instead of `\label`, in four package configurations (amsmath alone; with
+hyperref; with hyperref and cleveref; and with mermin loaded first), and
+checks that every key in each
 `.aux` file resolves to its line's number and anchor. It also checks the
 text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
 `\aka`, and non-ASCII phrases. Finally, it checks that `\eq` warns

@@ -13,6 +13,7 @@ mermin.sty: mermin.ins mermin.dtx
 mermin.pdf: mermin.dtx mermin.sty
 	pdflatex -interaction=nonstopmode -halt-on-error mermin.dtx >/dev/null
 	makeindex -q -s gind.ist mermin.idx
+	! grep -q '[1-9][0-9]* rejected' mermin.ilg || { cat mermin.ilg; exit 1; }
 	makeindex -q -s gglo.ist -o mermin.gls mermin.glo
 	pdflatex -interaction=nonstopmode -halt-on-error mermin.dtx >/dev/null
 	pdflatex -interaction=nonstopmode -halt-on-error mermin.dtx >/dev/null
@@ -30,6 +31,7 @@ ctan: $(CTAN_FILES)
 	rm -rf ctan-build mermin.zip
 	mkdir -p ctan-build/mermin
 	cp $(CTAN_FILES) ctan-build/mermin/
+	chmod 755 ctan-build/mermin
 	chmod 644 ctan-build/mermin/*
 	cd ctan-build && zip -qrX ../mermin.zip mermin
 	rm -rf ctan-build

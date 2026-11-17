@@ -16,7 +16,7 @@ jobs:
         texlive: [latest]
         engine: [pdflatex, lualatex, xelatex]
         include:
-          # The oldest supported LaTeX format is 2020-10-01, which TeX Live 2021 ships.
+          # The oldest supported LaTeX format is 2021-11-15, which TeX Live 2021 ships.
           - texlive: TL2021-historic
             engine: pdflatex
           # arXiv compiles with TeX Live 2025 by default and offers 2023.
@@ -33,10 +33,10 @@ jobs:
       - name: Versions
         run: |
           ${{ matrix.engine }} --version | head -1
-          grep -m1 'fmtversion' "$(kpsewhich latex.ltx)" || true
-          grep -m1 ProvidesPackage "$(kpsewhich amsmath.sty)"
-          grep -m1 ProvidesPackage "$(kpsewhich hyperref.sty)"
-          grep -m1 ProvidesPackage "$(kpsewhich cleveref.sty)"
+          cd "$(mktemp -d)"
+          printf '%s\n' '\documentclass{article}\usepackage{amsmath,hyperref,cleveref}\listfiles\begin{document}\end{document}' > versions.tex
+          ${{ matrix.engine }} -interaction=nonstopmode versions.tex >/dev/null || true
+          grep -E '^LaTeX2e <|^ *(amsmath|hyperref|cleveref)\.sty' versions.log
       - name: Generate mermin.sty
         run: make mermin.sty
       - name: Test

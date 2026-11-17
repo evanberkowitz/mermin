@@ -4,6 +4,10 @@
 \usepackage{mermin}
 \newcommand\EQ{\eqcite}
 \newcommand\aka{taken}\newcommand\AKA{\alsolabel}
+% mermin must leave both taken names exactly as they were.
+\let\nccmathEq\eq \newcommand\akaTaken{taken}
 \begin{document}
+\ifx\eq\nccmathEq\else\errmessage{mermin redefined nccmath's \string\eq}\fi
+\ifx\aka\akaTaken\else\errmessage{mermin redefined the document's \string\aka}\fi
 \input{eq-body}
 \end{document}
