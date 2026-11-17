@@ -4,7 +4,7 @@ Tools for writing equations the way N. David Mermin asks in
 "What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (1989),
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
-Version 0.2, 2026/11/16.
+Version 0.3, 2026/11/16.
 
 ## Description
 
@@ -38,8 +38,9 @@ amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
 order. `\label` itself is unchanged.
 
 `\eq{phrase}` falls back to the label `eq:phrase`, so existing `eq:` labels
-need no change. A phrase that cannot be a key takes one as an optional
-argument: `\eq[Gamma action]{$\Gamma$ action}`.
+need no change. A phrase that cannot be a key, such as one with math, is
+given once where the label is defined, `\alsolabel[$\Gamma$ action]{Gamma action}`,
+and cited as `\eq{Gamma action}`, which prints "Γ action (n)".
 
 The full documentation, including Mermin's three rules and the
 annotated implementation, is `mermin.pdf`.
@@ -77,8 +78,8 @@ typesets every supported environment, with the keys in every order, in four
 package configurations (amsmath alone; with hyperref; with hyperref and
 cleveref; and with mermin loaded first), and checks that every key in each
 `.aux` file resolves to its line's number and anchor. It also checks the
-text `\eq` prints, for phrase keys, `eq:` keys, optional keys, and
-non-ASCII phrases.
+text `\eq` prints, for phrase keys, `eq:` keys, typeset phrases given to
+`\alsolabel`, and non-ASCII phrases.
 
 ## License
 

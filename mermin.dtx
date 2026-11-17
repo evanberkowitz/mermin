@@ -21,7 +21,7 @@
 %<package>\NeedsTeXFormat{LaTeX2e}[2020/10/01]
 %<package>\ProvidesPackage{mermin}
 %<*package>
-    [2026/11/16 v0.2 Mermin-style equation tools]
+    [2026/11/16 v0.3 Mermin-style equation tools]
 %</package>
 %
 %<*driver>
@@ -44,6 +44,7 @@
 %
 % \changes{v0.1}{2026/11/16}{Initial version, providing \cs{alsolabel}.}
 % \changes{v0.2}{2026/11/16}{Added \cs{eq}; phrases are the keys.}
+% \changes{v0.3}{2026/11/16}{Typeset phrases move from \cs{eq} to an optional argument of \cs{alsolabel}.}
 %
 % \GetFileInfo{mermin.sty}
 %
@@ -167,9 +168,15 @@
 % |eq:|\meta{phrase}, so |\eq{shift relation}| cites
 % |\label{eq:shift relation}|.
 % A phrase that cannot be a key, because it contains mathematics or a
-% command, takes the key as an optional argument:
-% |\eq[Gamma action]{$\Gamma$ action}| prints ``$\Gamma$ action'' and the
-% number of the line labeled |Gamma action|.
+% command, is given where the label is defined, as the optional argument of
+% \cs{alsolabel}, and every citation then uses the plain key:
+% \begin{verbatim}
+% \begin{equation}
+%   S_\Gamma = ... \alsolabel[$\Gamma$ action]{Gamma action}
+% \end{equation}
+% ... the \eq{Gamma action} ...
+% \end{verbatim}
+% prints ``the $\Gamma$ action'' followed by the line's number.
 %
 % Because \cs{label} is left alone, two \cs{label}s on one line remain the
 % error \textsf{amsmath} has always reported; only \cs{alsolabel} adds
@@ -264,16 +271,46 @@
 % |\label@in@display| and calls \textsf{amsmath}'s original, saved as
 % |\cref@old@label@in@display|, directly with the stored form of the key;
 % that hook is redirected as well.
+% The optional typeset phrase is recorded first, by
+% |\mermin@writephrase| below.
 %    \begin{macrocode}
-\newcommand\alsolabel[1]{%
+\NewDocumentCommand\alsolabel{o m}{%
+  \IfValueT{#1}{\mermin@writephrase{#2}{#1}}%
   \begingroup
     \mermin@alsotrue
     \ifdefined\mermin@cref@old
       \let\cref@old@label@in@display\mermin@also@stored
     \fi
-    \label{#1}%
+    \label{#2}%
   \endgroup}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@writephrase}
+% \begin{macro}{\mermin@newphrase}
+% A typeset phrase travels through the \texttt{.aux} file, like the label
+% itself, so that \cs{eq} can print it before or after the definition.
+% |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}| defines
+% |\mermin@ph@|\meta{key}.
+% The phrase does not depend on the page, so it is written immediately;
+% a display typeset twice writes it twice, which is harmless.
+% A |\providecommand| at the top of the \texttt{.aux} file lets a document
+% that stops loading the package read its old \texttt{.aux} without error.
+%    \begin{macrocode}
+\def\mermin@writephrase#1#2{%
+  \if@filesw
+    \immediate\write\@auxout{%
+      \string\mermin@newphrase{\unexpanded{#1}}{\unexpanded{#2}}}%
+  \fi}
+\def\mermin@newphrase#1#2{%
+  \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}}
+\AtBeginDocument{%
+  \if@filesw
+    \immediate\write\@auxout{%
+      \string\providecommand\string\mermin@newphrase[2]{}}%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\mermin@call@orig}
@@ -434,18 +471,20 @@
 % \end{macro}
 %
 % \begin{macro}{\eq}
-% \cs{eq} prints its phrase, a tie, and the equation number from
-% \cs{eqref}, which \textsf{hyperref} makes a link.
-% Without the optional argument the phrase is also the key, unless only
+% \cs{eq} resolves its argument to a key: the argument itself, unless only
 % |eq:|\meta{phrase} is defined, in which case that key is used.
-% Before the first run defines any label, the key is the phrase itself,
+% Before the first run defines any label, the key is the argument itself,
 % so the usual undefined-reference warning names it.
+% It then prints the typeset phrase recorded for that key, or the argument
+% if none was recorded, a tie, and the equation number from \cs{eqref},
+% which \textsf{hyperref} makes a link.
 %    \begin{macrocode}
-\NewDocumentCommand\eq{o m}{%
-  \IfNoValueTF{#1}%
-    {\mermin@eq@key{#2}}%
-    {\def\mermin@key{#1}}%
-  #2~\@xp\eqref\@xp{\mermin@key}%
+\NewDocumentCommand\eq{m}{%
+  \mermin@eq@key{#1}%
+  \@ifundefined{mermin@ph@\mermin@key}%
+    {#1}%
+    {\csname mermin@ph@\mermin@key\endcsname}%
+  ~\@xp\eqref\@xp{\mermin@key}%
 }
 \def\mermin@eq@key#1{%
   \def\mermin@key{#1}%

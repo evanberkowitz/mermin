@@ -7,6 +7,7 @@ WANT = [
     'T3: the shift relation (2) holds',
     'T4: the Γ action (3) holds',
     'T5: the Schrödinger equation (4) holds',
+    'T6: the Γ dual (5) holds',
 ]
 ok = True
 for pdf in sys.argv[1:]:
