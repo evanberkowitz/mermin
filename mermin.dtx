@@ -320,34 +320,32 @@
 %
 % \section{Implementation}
 %
-% \textsf{amsmath} does not write a display label when it meets \cs{label}.
-% It stores the key in |\df@label| and writes it with
-% |\ltx@label{|\meta{contents of \texttt{\char`\\df@label}}|}| once the
-% line's tag, and so |\@currentlabel| and the \textsf{hyperref} anchor, are
-% known.
-% The package keeps the extra keys of a line in a queue and writes them
-% immediately after that primary label, so they receive the same number and
-% anchor.
+% The implementation has ten parts.
+% Parts~\ref{impl:load}--\ref{impl:aux} set up the package and the records
+% it keeps in the \texttt{.aux} file.
+% Parts~\ref{impl:aka}--\ref{impl:queue} define \cs{alsolabel} and the
+% machinery that gives a display line several keys.
+% Part~\ref{impl:xr} imports the records of another document through
+% \textsf{xr}.
+% Parts~\ref{impl:cite}--\ref{impl:short} define \cs{eqcite} and the
+% short names, and make both behave in headings and bookmarks.
 %
-% Three complications shape the code.
-% First, \textsf{cleveref} stores keys in a different form, wrapping the key
-% in braces or preceding it with an optional argument, so every queued key
-% is stored in exactly the form |\label@in@display| would have stored it.
-% Second, \textsf{amsmath} and \textsf{empheq} typeset some displays twice,
-% once to measure them, and may discard a primary label without writing it.
-% The queue is therefore tagged with the primary label it belongs to and
-% written only when that label is, and a key is never queued twice.
-% Third, \cs{alsolabel} may come before \cs{label} or without it.
-% It then occupies |\df@label| itself, and a later \cs{label} reclaims the
-% slot and moves the earlier key into the queue.
+% The narrative is here; the code carries short comments only where a
+% construction looks odd or exists for one particular package, so that a
+% reader of the bare \texttt{mermin.sty} is not lost.
 %
-% Two further records travel through the \texttt{.aux} file, like labels
-% themselves, so that a citation may precede its equation: the typeset
-% phrases given to \cs{alsolabel}, and the keys that belong to equations,
-% which \cs{eqcite} consults before warning.
+% \subsection{Loading}\label{impl:load}
 %
+% The package needs \textsf{amsmath}, whose display machinery it extends.
+% IOP's \textsf{iopart} class defines |equation*| itself, which
+% \textsf{amsmath} then refuses to redefine; IOP's documented remedy is to
+% undefine it first, and the package does so when \textsf{iopart} is the
+% class and \textsf{amsmath} is not yet loaded.
 %    \begin{macrocode}
 %<*package>
+ % iopart.cls defines equation*, and amsmath would stop with "Command
+ % \equation* already defined"; this is IOP's own workaround.  amsmath's
+ % \@xp is not defined yet, hence \expandafter.
 \@ifclassloaded{iopart}{%
   \@ifpackageloaded{amsmath}{}{%
     \expandafter\let\csname equation*\endcsname\relax
@@ -355,48 +353,172 @@
 \RequirePackage{amsmath}
 %    \end{macrocode}
 %
-% \begin{macro}{\mermin@queue}
-% \begin{macro}{\mermin@tag}
-% \begin{macro}{\mermin@promoted}
-% The queue holds extra keys as |\do{|\meta{stored form}|}|.
-% The tag is the |\df@label| the queue belongs to.
-% |\mermin@promoted| is nonempty when \cs{alsolabel} occupies |\df@label|
-% because no \cs{label} has come yet.
+% \subsection{Utilities}\label{impl:util}
+%
+% \begin{macro}{\mermin@firstof}
+% \begin{macro}{\mermin@ifeqprefix}
+% Two expandable tests on a key look at its characters rather than its
+% tokens.
+% |\mermin@firstof{|\meta{text}|}| expands to the first character of
+% \meta{text}, as a character of category 12.
+% |\mermin@ifeqprefix{|\meta{key}|}{|\meta{true}|}{|\meta{false}|}| tests
+% whether \meta{key} begins with |eq:|.
+% Both detokenize first, for two reasons.
+% A key is never scanned as a delimited argument, which inside an
+% alignment would end the cell at an |&| in the key; and the test does not
+% depend on categories, which \textsf{babel} languages change: French makes
+% the colon active in the document body.
+% |\if| compares character codes only, so the category-12 characters of
+% the detokenized key match the letters typed here.
 %    \begin{macrocode}
-\gdef\mermin@queue{}
-\gdef\mermin@tag{}
-\gdef\mermin@promoted{}
-\newif\ifmermin@also
+\def\mermin@firstof#1{%
+  \@xp\mermin@firstof@\detokenize{#1}\relax\mermin@nil}
+ % The \relax keeps an empty key from leaving #1 empty.
+\def\mermin@firstof@#1#2\mermin@nil{#1}
+\def\mermin@ifeqprefix#1{%
+  \@xp\mermin@ifeqprefix@\detokenize{#1}\relax\relax\relax\mermin@nil}
+\def\mermin@ifeqprefix@#1#2#3#4\mermin@nil{%
+  \ifnum\if e#1\if q#2\if :#3 1\else 0\fi\else 0\fi\else 0\fi=1
+    \@xp\@firstoftwo
+  \else
+    \@xp\@secondoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
+%
+% \begin{macro}{\mermin@ifunprintable}
+% \begin{macro}{\mermin@verbatim}
+% A key that is printed as text, because it has no typeset phrase, must
+% not contain characters that typesetting would misread.
+% |\mermin@ifunprintable| tests for them; |\mermin@verbatim| prints a key
+% character by character in typewriter type, whose fonts have every
+% \textsc{ascii} character.
+% Braces are not in the list: \cs{in@} cannot find a brace character, and
+% a key with braces prints, only without them.
+%    \begin{macrocode}
+\edef\mermin@specials{\detokenize{_^$&<>|}\@percentchar\@backslashchar}
+\def\mermin@ifunprintable#1{%
+  \edef\mermin@tmp{\detokenize{#1}}%
+  \let\mermin@bad\@empty
+  \@xp\@tfor\@xp\mermin@c\@xp:\@xp=\mermin@specials\do{%
+    \edef\reserved@a{\noexpand\in@{\mermin@c}{\mermin@tmp}}\reserved@a
+    \ifin@\def\mermin@bad{x}\fi}%
+  \ifx\mermin@bad\@empty\@xp\@secondoftwo\else\@xp\@firstoftwo\fi}
+\def\mermin@verbatim#1{{\normalfont\ttfamily\detokenize{#1}}}
+%    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \subsection{Records in the \texttt{.aux} file}\label{impl:aux}
+%
+% Three kinds of record travel through the \texttt{.aux} file, like
+% labels, so that a citation may come before its equation:
+% \begin{itemize}
+% \item |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}|, the typeset
+%   phrase given to \cs{alsolabel}, which defines |\mermin@ph@|\meta{key};
+% \item |\mermin@equation{|\meta{key}|}|, which records that \meta{key}
+%   labels an equation, by defining |\mermin@eq@|\meta{key}, so that
+%   \cs{eqcite} can warn about anything else;
+% \item |\mermin@auxmark|, once per file, which says that the file was
+%   written with this package.
+% \end{itemize}
+% Until a file with the mark has been read, \cs{eqcite} does not warn about
+% non-equations: a paper that has just adopted the package has an
+% \texttt{.aux} file full of equation labels and no records of them.
+%
+% \begin{macro}{\mermin@record}
+% Records do not depend on the page, so they are written immediately.
+% The argument is expanded as \cs{label} expands its key, robust commands
+% excepted, so that a key such as |sec\thesection:mass| is recorded as the
+% same key that \cs{label} writes.
+%    \begin{macrocode}
+\def\mermin@record#1{%
+  \if@filesw
+    \begingroup
+      \let\protect\@unexpandable@protect
+      \immediate\write\@auxout{#1}%
+    \endgroup
+  \fi}
+\def\mermin@writephrase#1#2{%
+  \mermin@record{\string\mermin@newphrase{#1}{\unexpanded{#2}}}}
+\def\mermin@markeq#1{\mermin@record{\string\mermin@equation{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@auxheader}
+% Each \texttt{.aux} file starts with |\providecommand|s for the three
+% records, so that a document that stops loading the package still reads
+% its old files, and with the mark.
+% Files of chapters read with \cs{include} get the same header: under
+% \cs{includeonly} their old files are read without being rewritten.
+% The mark is on a line of its own, where \textsf{xr}, which looks only at
+% the first token of a line, can see it.
+%    \begin{macrocode}
+\def\mermin@auxheader#1{%
+  \immediate\write#1{%
+    \string\providecommand\string\mermin@newphrase[2]{}%
+    \string\providecommand\string\mermin@equation[1]{}%
+    \string\providecommand\string\mermin@auxmark{}}%
+  \immediate\write#1{\string\mermin@auxmark}}
+\AtBeginDocument{\if@filesw\mermin@auxheader\@auxout\fi}
+\AddToHook{include/before}{\if@filesw\mermin@auxheader\@partaux\fi}
+\def\mermin@auxmark{\global\let\mermin@marked\@empty}
+\def\mermin@equation#1{%
+  \global\let\mermin@marked\@empty
+  \@xp\gdef\csname mermin@eq@#1\endcsname{}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@newphrase}
+% \begin{macro}{\mermin@checkphrases}
+% When \LaTeX\ rereads the \texttt{.aux} file at the end of the document
+% to look for changed labels, a changed phrase also asks for another run.
+% So does a removed one: the keys that had phrases when the run began are
+% listed in |\mermin@phkeys|, and after the reread any of them that was
+% not seen again sets the same flag.
+% Phrases are compared by their characters only.
+%    \begin{macrocode}
+\let\mermin@phkeys\@empty
+\def\mermin@newphrase#1#2{%
+  \global\let\mermin@marked\@empty
+   % The end-of-document reread is recognized by \@setckpt, which the
+   % kernel (and REVTeX) makes \@gobbletwo only then.  \@newl@bel is the
+   % obvious test, but acronym changes it during the reread.
+  \ifx\@setckpt\@gobbletwo
+    \global\@namedef{mermin@seen@#1}{}%
+     % Detokenized: unicode-math changes the category of letters such as
+     % a literal Gamma after the .aux file is first read, and comparing
+     % tokens would ask for a rerun forever.
+    \edef\reserved@a{\detokenize{#2}}%
+    \edef\reserved@b{%
+      \detokenize\@xp\@xp\@xp{\csname mermin@ph@#1\endcsname}}%
+    \ifx\reserved@a\reserved@b\else\@tempswatrue\fi
+  \else
+    \@xp\gdef\csname mermin@ph@#1\endcsname{#2}%
+    \g@addto@macro\mermin@phkeys{\do{#1}}%
+  \fi}
+\def\mermin@checkphrases{%
+  \def\do##1{\@ifundefined{mermin@seen@##1}{\@tempswatrue}{}}%
+  \mermin@phkeys}
+ % afteraux runs after the reread and before the kernel's rerun warning.
+\AddToHook{enddocument/afteraux}{\if@filesw\mermin@checkphrases\fi}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \subsection{The command \cs{alsolabel}}\label{impl:aka}
 %
 % \begin{macro}{\alsolabel}
 % Where \LaTeX\ disables \cs{label}, as it does in the text written to a
-% table of contents or a running head, \cs{alsolabel} disappears with it,
-% together with its arguments.
-% Releases before 2025-06-01 make \cs{label} |\@gobble| or |\relax|
-% there; later ones make it |\@gobble@om|, or
-% |\@gobble@with@sphack@om| where it is typeset, and \cs{alsolabel} then
-% uses that command itself.
-% It is therefore expandable, and only chooses between that and the real
-% command, |\mermin@alsolabel|, which is robust.
-% The real command calls whatever \cs{label} means at that point, with a
-% flag raised.
-% The measuring passes of \textsf{amsmath} gobble or defer \cs{label}, and
-% \cs{alsolabel} thereby inherits the same treatment.
-% In a display \cs{label} is |\label@in@display|, which the package wraps
-% below to read the flag.
-% \textsf{cleveref}'s measuring pass for \textsf{multline} skips
-% |\label@in@display| and calls \textsf{amsmath}'s original, saved as
-% |\cref@old@label@in@display|, directly with the stored form of the key;
-% that hook is redirected as well.
-% The optional typeset phrase is recorded first, by
-% |\mermin@writephrase| below.
-% The group would keep \cs{label}'s |\@esphack| from removing the space
-% after it in running text, so the whole command is wrapped in its own
-% |\@bsphack| and |\@esphack|.
+% table of contents or a running head, \cs{alsolabel} must disappear with
+% it, together with its arguments.
+% \cs{alsolabel} is therefore expandable: it looks at what \cs{label}
+% means and expands either to a gobbler or to the real command,
+% |\mermin@alsolabel|, which is robust.
+% Releases before 2025-06-01 disable \cs{label} as |\@gobble| or
+% |\relax|; later ones as |\@gobble@om|, or |\@gobble@with@sphack@om|
+% where the text is typeset, which \cs{alsolabel} then uses itself.
 %    \begin{macrocode}
 \def\alsolabel{%
   \ifx\label\@gobble \mermin@aka@use\mermin@gobble@aka\fi
@@ -405,17 +527,41 @@
   \ifx\label\@gobble@with@sphack@om
     \mermin@aka@use\@gobble@with@sphack@om\fi
   \mermin@alsolabel}
+ % \mermin@aka@use ends the test that matched, drops the remaining tests up
+ % to \mermin@alsolabel, and leaves #1 in its place.
 \def\mermin@aka@use#1#2\mermin@alsolabel{\fi#1}
 \NewExpandableDocumentCommand\mermin@gobble@aka{d<> o m}{}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@alsolabel}
+% The real command records the optional phrase and then calls whatever
+% \cs{label} means at that point, with the flag |\ifmermin@also| raised.
+% In a display \cs{label} is |\label@in@display|, which
+% part~\ref{impl:queue} wraps to read the flag; elsewhere \cs{label} acts as
+% usual, and \cs{alsolabel} gives a section or a figure a second name.
+% The measuring passes of \textsf{amsmath} gobble or defer \cs{label}, and
+% \cs{alsolabel} inherits the same treatment.
+% A \textsf{beamer} overlay, |<|\meta{overlay}|>|, goes to \textsf{beamer}'s
+% \cs{label} outside displays, and is dropped inside them.
+%    \begin{macrocode}
+\newif\ifmermin@also
 \NewDocumentCommand\mermin@alsolabel{d<> o m}{%
+   % \label ends with \@esphack, but inside the group below it cannot
+   % remove the space after the command in running text; the command
+   % therefore has its own \@bsphack and \@esphack.
   \@bsphack
   \IfValueT{#2}{\mermin@writephrase{#3}{#2}}%
   \begingroup
     \mermin@alsotrue
+     % cleveref's multline trial pass calls this hook directly instead of
+     % \label@in@display; see \mermin@cref@entry.
     \ifdefined\mermin@cref@old
       \let\cref@old@label@in@display\mermin@also@stored
     \fi
     \IfValueTF{#1}%
+       % Only beamer's \label takes an overlay: the document's \label, or
+       % \mermin@marklabel wrapping it.  amsmath's display \label does not.
       {\ifx\label\mermin@doclabel
          \label<#1>{#3}%
        \else\ifx\label\mermin@marklabel
@@ -429,250 +575,148 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\mermin@writephrase}
-% \begin{macro}{\mermin@newphrase}
-% A typeset phrase travels through the \texttt{.aux} file, like the label
-% itself, so that \cs{eq} can print it before or after the definition.
-% When \LaTeX\ rereads the \texttt{.aux} file at the end of the document to
-% look for changed labels, a changed phrase also asks for another run.
-% The reread is recognized by |\@setckpt|, which the kernel (and
-% REVTeX) makes |\@gobbletwo| only then; |\@newl@bel| is not reliable,
-% since packages such as \textsf{acronym} change it during the reread.
-% |\mermin@newphrase{|\meta{key}|}{|\meta{phrase}|}| defines
-% |\mermin@ph@|\meta{key}.
-% The phrase does not depend on the page, so it is written immediately;
-% a display typeset twice writes it twice, which is harmless.
-% The key is expanded as \cs{label} expands it, so that a key such as
-% |sec\thesection:mass| is recorded as the same key in both places.
-% The keys that had phrases when the run began are remembered; after the
-% reread, any key whose phrase is gone also asks for another run.
-% A key read through \textsf{xr} defines its phrase directly, so it is
-% not checked.
-% Phrases are compared by their characters only: \textsf{unicode-math}
-% changes the category of letters such as $\Gamma$ after the \texttt{.aux} file
-% is first read, and a comparison of tokens would ask for a rerun forever.
-% A |\providecommand| at the top of the \texttt{.aux} file lets a document
-% that stops loading the package read its old \texttt{.aux} without error.
-%    \begin{macrocode}
-\def\mermin@writephrase#1#2{%
-  \if@filesw
-    \begingroup
-      \let\protect\@unexpandable@protect
-      \immediate\write\@auxout{%
-        \string\mermin@newphrase{#1}{\unexpanded{#2}}}%
-    \endgroup
-  \fi}
-\def\mermin@newphrase#1#2{%
-  \global\let\mermin@marked\@empty
-  \ifx\@setckpt\@gobbletwo
-    \global\@namedef{mermin@seen@#1}{}%
-    \edef\reserved@a{\detokenize{#2}}%
-    \edef\reserved@b{\detokenize\@xp\@xp\@xp
-      {\csname mermin@ph@#1\endcsname}}%
-    \ifx\reserved@a\reserved@b\else\@tempswatrue\fi
-  \else
-    \expandafter\gdef\csname mermin@ph@#1\endcsname{#2}%
-    \g@addto@macro\mermin@phkeys{\do{#1}}%
-  \fi}
-\let\mermin@phkeys\@empty
-\def\mermin@checkphrases{%
-  \def\do##1{\@ifundefined{mermin@seen@##1}{\@tempswatrue}{}}%
-  \mermin@phkeys}
-\AddToHook{enddocument/afteraux}{\if@filesw\mermin@checkphrases\fi}
-\AtBeginDocument{%
-  \if@filesw
-    \immediate\write\@auxout{%
-      \string\providecommand\string\mermin@newphrase[2]{}}%
-  \fi}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\mermin@markeq}
-% \begin{macro}{\mermin@equation}
-% \cs{eq} warns when it cites a label that is not an equation, so every
-% equation key is recorded, again through the \texttt{.aux} file:
-% |\mermin@equation{|\meta{key}|}| defines |\mermin@eq@|\meta{key}.
-%    \begin{macrocode}
-\def\mermin@markeq#1{%
-  \if@filesw
-    \begingroup
-      \let\protect\@unexpandable@protect
-      \immediate\write\@auxout{\string\mermin@equation{#1}}%
-    \endgroup
-  \fi}
-\def\mermin@equation#1{%
-  \global\let\mermin@marked\@empty
-  \expandafter\gdef\csname mermin@eq@#1\endcsname{}}
-\AtBeginDocument{%
-  \if@filesw
-    \immediate\write\@auxout{%
-      \string\providecommand\string\mermin@equation[1]{}}%
-    \immediate\write\@auxout{%
-      \string\providecommand\string\mermin@auxmark{}}%
-    \immediate\write\@auxout{\string\mermin@auxmark}%
-  \fi}
-\def\mermin@auxmark{\global\let\mermin@marked\@empty}
-\AddToHook{include/before}{%
-  \if@filesw
-    \immediate\write\@partaux{%
-      \string\providecommand\string\mermin@newphrase[2]{}%
-      \string\providecommand\string\mermin@equation[1]{}%
-      \string\providecommand\string\mermin@auxmark{}}%
-    \immediate\write\@partaux{\string\mermin@auxmark}%
-  \fi}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\mermin@xr@test}
-% \textsf{xr} and \textsf{xr-hyper} import another document's labels, as
-% for a paper and its supplement, by reading that document's \texttt{.aux}
-% file a line at a time with |\XR@test|, which keeps only \cs{newlabel} and
-% \cs{bibcite} lines.
-% The wrapper also imports the records of equation keys and phrases, with
-% the external document's prefix added to each key.
-% It is installed once, whether \textsf{xr} is loaded before or after this
-% package.
-%    \begin{macrocode}
-\long\def\mermin@xr@test#1#2#3#4\XR@{%
-  \ifdefined\eq\else\let\eq\eqcite\fi
-  \ifdefined\aka\else\let\aka\alsolabel\fi
-  \ifx#1\mermin@auxmark
-    \def\mermin@xr@marked{}%
-  \else\ifx#1\mermin@equation
-    \mermin@xr@import{#2}%
-  \else\ifx#1\mermin@newphrase
-    \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
-  \else\ifx#1\newlabel
-    % A document without mermin records no equations: treat its labels
-    % as equations rather than warn about every one.
-    \ifdefined\mermin@xr@marked\else\mermin@xr@import{#2}\fi
-  \fi\fi\fi\fi
-  \mermin@xr@orig#1{#2}{#3}#4\XR@}
-\def\mermin@xr@import#1{%
-  \@xp\gdef\csname mermin@eq@\XR@prefix#1\endcsname{}%
-  \def\mermin@xr@key{#1}%
-  \mermin@xr@eqsplit\relax#1\mermin@stop eq:\mermin@stop\mermin@nil
-  \@xp\xdef\csname mermin@xrdef@\XR@prefix#1\endcsname
-    {\unexpanded\@xp{\mermin@xr@rest}}}
-\def\mermin@xr@eqsplit#1eq:#2\mermin@stop#3\mermin@nil{%
-  \def\mermin@tmp{#1}%
-  \ifx\mermin@tmp\mermin@relax
-    \def\mermin@xr@rest{#2}%
-    \@xp\xdef\csname mermin@xreq@\XR@prefix#2\endcsname
-      {\XR@prefix\unexpanded{eq:#2}}%
-  \else
-    \@xp\def\@xp\mermin@xr@rest\@xp{\mermin@xr@key}%
-  \fi}
-\def\mermin@relax{\relax}
-\def\mermin@xr@patch{%
-  \ifdefined\mermin@xr@orig\else
-    \let\mermin@xr@orig\XR@test
-    \let\XR@test\mermin@xr@test
-  \fi}
-\AddToHook{package/xr/after}{\mermin@xr@patch}
-\AddToHook{package/xr-hyper/after}{\mermin@xr@patch}
-\@ifpackageloaded{xr}{\mermin@xr@patch}{}
-\@ifpackageloaded{xr-hyper}{\mermin@xr@patch}{}
-%    \end{macrocode}
-% \end{macro}
+% \subsection{Which keys are equations}\label{impl:mark}
 %
 % \begin{macro}{\mermin@markargs}
-% Keys are recorded as equations where an \textsf{amsmath} display
-% registers them, in |\label@in@display|, and not where labels are
-% written: |\ltx@label|, which writes them, can also be reached from
-% outside a display.
-% A key arrives as |{|\meta{key}|}|, as |[|\meta{type}|]{|\meta{key}|}| with
-% \textsf{cleveref}'s optional argument, or, without \textsf{cleveref}, as
-% \textsf{amsmath} stores it, the bare \meta{key}.
-% |\mermin@markargs| records the key in any of these forms.
+% \begin{macro}{\mermin@keyof}
+% A key is recorded as an equation where a display registers it, and not
+% where labels are written: |\ltx@label|, which writes them, is reached
+% from outside displays too.
+% A key arrives as |{|\meta{key}|}|, as |[|\meta{type}|]{|\meta{key}|}|
+% with \textsf{cleveref}'s optional argument, or as \textsf{amsmath} stores
+% it without \textsf{cleveref}, the bare \meta{key}.
+% |\mermin@keyof| sets |\mermin@rawkey| to the key in any of these forms.
 %    \begin{macrocode}
 \def\mermin@markargs#1{%
+   % The \iffalse braces raise TeX's alignment brace count without opening
+   % a group, so that an & in a bare key, scanned as a delimited argument
+   % inside align, does not end the cell.
   \iffalse{\fi
   \mermin@keyof#1\mermin@nil
   \@xp\mermin@markeq\@xp{\mermin@rawkey}%
   \iffalse}\fi}
-\def\mermin@keyof{%
-  \@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
+\def\mermin@keyof{\@ifnextchar[\mermin@keyof@opt\mermin@keyof@plain}
 \def\mermin@keyof@plain#1\mermin@nil{\def\mermin@rawkey{#1}}
 \def\mermin@keyof@opt[#1]#2\mermin@nil{\def\mermin@rawkey{#2}}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
 %
 % \begin{macro}{\mermin@marklabels}
-% The label of a \textsf{subequations} group, numbered like ``(12)'', is
-% an ordinary \cs{label} between the displays, and the displays of
-% \textsf{breqn}, |dmath| and |dseries|, use the ordinary \cs{label} too,
-% as do \textsf{eqnarray}, |numcases|, |subnumcases|, and |IEEEeqnarray|.
-% Inside these environments \cs{label} therefore also records its key.
+% Some equations are labeled by an ordinary \cs{label}, not by
+% |\label@in@display|: the label of a \textsf{subequations} group, numbered
+% like ``(12)'', and the labels in \textsf{breqn}'s displays, in the
+% \textsf{cases} package's |numcases|, in \textsf{IEEEtrantools}'
+% |IEEEeqnarray|, in \textsf{subeqnarray}, and in the kernel's
+% \textsf{eqnarray}.
+% Inside these environments \cs{label} also records its key.
 % The \textsf{amsmath} displays within them install their own \cs{label},
-% and an environment nested in another, such as |dmath| in |dgroup| or in
-% \textsf{subequations}, finds \cs{label} already wrapped and leaves it.
+% and an environment nested in another, such as |dmath| in |dgroup|,
+% finds \cs{label} already wrapped and leaves it.
 %    \begin{macrocode}
 \def\mermin@marklabels{%
   \ifx\label\mermin@marklabel\else
     \let\mermin@sub@orig\label
     \let\label\mermin@marklabel
   \fi}
+ % beamer's \label takes an overlay, <...>, before the optional argument.
 \def\mermin@marklabel{%
   \@ifnextchar<\mermin@sub@ov{\@ifnextchar[\mermin@sub@opt\mermin@sub@noarg}}
-\AddToHook{env/subequations/begin}{\mermin@marklabels}
-\AddToHook{env/dmath/begin}{\mermin@marklabels}
-\AddToHook{env/dseries/begin}{\mermin@marklabels}
-\AddToHook{env/dgroup/begin}{\mermin@marklabels}
-\AddToHook{env/eqnarray/begin}{\mermin@marklabels}
-\AddToHook{env/numcases/begin}{\mermin@marklabels}
-\AddToHook{env/subnumcases/begin}{\mermin@marklabels}
-\AddToHook{env/IEEEeqnarray/begin}{\mermin@marklabels}
-\AddToHook{env/IEEEeqnarray*/begin}{\mermin@marklabels}
-\AddToHook{env/subeqnarray/begin}{%
-  \mermin@marklabels
-  \let\mermin@slabel@orig\slabel
-  \def\slabel#1{\mermin@markeq{#1}\mermin@slabel@orig{#1}}}
 \def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
 \def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
 \def\mermin@sub@ov<#1>#2{\mermin@markeq{#2}\mermin@sub@orig<#1>{#2}}
+\def\mermin@markenv#1{\AddToHook{env/#1/begin}{\mermin@marklabels}}
+\@for\mermin@env:=%
+    subequations,% amsmath
+    dmath,dseries,dgroup,% breqn
+    numcases,subnumcases,% cases
+    IEEEeqnarray,IEEEeqnarray*,% IEEEtrantools
+    eqnarray,% LaTeX kernel
+    subeqnarray% subeqnarray
+  \do{\@xp\mermin@markenv\@xp{\mermin@env}}
+ % subeqnarray labels each row with \slabel, which writes \newlabel itself.
+\AddToHook{env/subeqnarray/begin}{%
+  \let\mermin@slabel@orig\slabel
+  \def\slabel#1{\mermin@markeq{#1}\mermin@slabel@orig{#1}}}
 %    \end{macrocode}
 % \end{macro}
 %
+% \subsection{Extra keys on a display line}\label{impl:queue}
+%
+% \textsf{amsmath} does not write a display label when it meets \cs{label}.
+% It stores the key in |\df@label| and writes it with
+% |\ltx@label{|\meta{contents of \texttt{\char`\\df@label}}|}| once the
+% line's tag, and so |\@currentlabel| and the \textsf{hyperref} anchor, are
+% known.
+% The package keeps the extra keys of a line in a queue and writes them
+% immediately after that primary label, so they receive the same number and
+% anchor.
+%
+% Three complications shape the code.
+% First, \textsf{cleveref} stores keys in a different form, wrapping the
+% key in braces or preceding it with an optional argument, so every queued
+% key is stored in exactly the form |\label@in@display| would have stored
+% it.
+% Second, \textsf{amsmath} and \textsf{empheq} typeset some displays twice,
+% once to measure them, and may discard a primary label without writing
+% it.
+% The queue is therefore tagged with the primary label it belongs to and
+% written only when that label is, and a key is never queued twice.
+% Third, \cs{alsolabel} may come before \cs{label} or without it.
+% It then occupies |\df@label| itself, \emph{promoted}, and a later
+% \cs{label} reclaims the slot and moves the earlier key into the queue.
+%
+% \begin{macro}{\mermin@queue}
+% \begin{macro}{\mermin@tag}
+% \begin{macro}{\mermin@promoted}
+% The queue holds extra keys as |\do{|\meta{stored form}|}|.
+% The tag is the |\df@label| the queue belongs to.
+% |\mermin@promoted| is nonempty while \cs{alsolabel} occupies
+% |\df@label|.
+% All three are global, like |\df@label| itself, because the cells of an
+% alignment are groups.
+%    \begin{macrocode}
+\gdef\mermin@queue{}
+\gdef\mermin@tag{}
+\gdef\mermin@promoted{}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
 % \begin{macro}{\mermin@call@orig}
-% This calls the |\label@in@display| that was in force before the package
-% wrapped it, with \textsf{cleveref}'s inner hook restored, and records the
-% key as an equation.
-% The argument is the complete argument list, braces included.
+% \begin{macro}{\mermin@canonical}
+% |\mermin@call@orig| calls the |\label@in@display| that was in force
+% before the package wrapped it, and records the key as an equation.
+% Its argument is the complete argument list, braces included.
+% |\mermin@canonical{|\meta{key}|}| sets |\mermin@form| to the form in which
+% that |\label@in@display| would store \meta{key}, by letting it store the
+% key into an emptied |\df@label| and restoring the old contents.
 %    \begin{macrocode}
 \def\mermin@call@orig#1{%
   \mermin@markargs{#1}%
   \begingroup
+     % Undo, locally, the redirection of cleveref's inner hook.
     \ifdefined\mermin@cref@old
       \let\cref@old@label@in@display\mermin@cref@old
     \fi
     \mermin@orig@label@in@display#1%
   \endgroup}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\mermin@canonical}
-% This sets |\mermin@form| to the form in which |\label@in@display| would
-% store the key |#1|, by letting it store the key into an emptied
-% |\df@label| and restoring the old contents afterwards.
-%    \begin{macrocode}
 \def\mermin@canonical#1{%
   \global\let\mermin@saved\df@label
   \global\let\df@label\@empty
   \mermin@call@orig{{#1}}%
   \global\let\mermin@form\df@label
-  \global\let\df@label\mermin@saved
-}
+  \global\let\df@label\mermin@saved}
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\mermin@enqueue}
 % This queues |\mermin@form| for the current |\df@label|.
 % A queue tagged with a different label is stale and is discarded first.
-% A form already in the queue is skipped, because a display typeset twice
-% runs its \cs{alsolabel}s twice.
+% A form already in the queue is skipped: a display typeset twice runs its
+% \cs{alsolabel}s twice, and \cs{text} typesets its argument four times.
 % With the \textsf{mathtools} option |showonlyrefs| a line is numbered only
 % if its primary label was cited, which \textsf{mathtools} records as
 % |\MT_r_|\meta{label}; a citation of a queued key counts for the line too.
@@ -682,7 +726,7 @@
     \gdef\mermin@queue{}%
     \global\let\mermin@tag\df@label
   \fi
-  \iffalse{\fi
+  \iffalse{\fi % alignment guard, as in \mermin@markargs
   \@xp\mermin@keyof\mermin@form\mermin@nil
   \@ifundefined{MT_r_\mermin@rawkey}{}%
     {\global\@namedef{MT_r_\df@label}{}}%
@@ -697,26 +741,25 @@
       \xdef\mermin@queue{%
         \unexpanded\@xp{\mermin@queue}\noexpand\do{\the\toks@}}%
     \fi
-  \endgroup
-}
+  \endgroup}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\mermin@also@in@display}
 % \begin{macro}{\mermin@also@stored}
 % \cs{alsolabel} in a display converts its key to stored form.
-% If the line has no label yet, the key becomes the primary label and is
-% marked as promoted; otherwise it is queued.
+% A key the line's label already has adds nothing, so that
+% |\label{K}\aka[|\meta{phrase}|]{K}| gives an existing label a phrase.
+% If the line has no label yet, the key is promoted; otherwise it is
+% queued.
 %    \begin{macrocode}
 \def\mermin@also@in@display#1{%
   \mermin@canonical{#1}%
-  \@xp\mermin@also@stored\@xp{\mermin@form}%
-}
+  \@xp\mermin@also@stored\@xp{\mermin@form}}
 \def\mermin@also@stored#1{%
   \mermin@markargs{#1}%
   \def\mermin@tmp{#1}%
   \ifx\mermin@tmp\df@label
-    % The line's label already has this key: nothing to add.
   \else\ifx\df@label\@empty
     \gdef\df@label{#1}%
     \global\let\mermin@promoted\df@label
@@ -725,8 +768,7 @@
   \else
     \gdef\mermin@form{#1}%
     \mermin@enqueue
-  \fi\fi
-}
+  \fi\fi}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -734,8 +776,9 @@
 % \begin{macro}{\mermin@real@in@display}
 % A real \cs{label} normally passes straight through, and so still reports
 % a second \cs{label} on one line as an error.
-% If instead the line's primary label was promoted from \cs{alsolabel}, the
-% real key takes the slot and the promoted key joins the queue.
+% If instead the line's label was promoted from \cs{alsolabel}, the real
+% key takes the slot and the promoted key joins the queue, unless it is
+% the same key.
 % A promotion left over from a discarded measuring pass no longer matches
 % |\df@label| and is cleared.
 %    \begin{macrocode}
@@ -753,23 +796,33 @@
   \else
     \gdef\mermin@promoted{}%
     \mermin@call@orig{#1}%
-  \fi\fi
-}
+  \fi\fi}
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\mermin@label@in@display}
 % \begin{macro}{\mermin@cref@entry}
-% \textsf{cleveref}'s \textsf{multline} trial pass hands its inner hook the
-% key braced, |{|\meta{key}|}|, with \textsf{amsmath} before 2025, but bare
-% with \textsf{amsmath}~2.17z.
-% This accepts either, or |[|\meta{type}|]{|\meta{key}|}|, and passes the
-% key on as \cs{label} would.
-% It tells the forms apart by the first character of the detokenized
-% argument, so that a bare key is never scanned as a delimited argument:
-% inside an alignment an |&| in it would end the cell.
+% A real \cs{label} in a display arrives at |\mermin@label@in@display|,
+% with \textsf{cleveref}'s optional argument passed through.
+% \textsf{beamer}'s display \cs{label} takes an overlay, which is dropped.
+%
+% \textsf{cleveref}'s \textsf{multline} trial pass bypasses
+% |\label@in@display| and hands its inner hook,
+% |\cref@old@label@in@display|, the stored key: braced, |{|\meta{key}|}|,
+% with \textsf{amsmath} before~2.17z, but bare with \textsf{amsmath}~2.17z
+% (\TeX\ Live 2025 and later).
+% |\mermin@cref@entry| accepts either, or |[|\meta{type}|]{|\meta{key}|}|.
 %    \begin{macrocode}
-\def\mermin@firstof#1{\@xp\mermin@firstof@\detokenize{#1}\relax\mermin@nil}
-\def\mermin@firstof@#1#2\mermin@nil{#1}
+\def\mermin@label@in@display{%
+  \@ifnextchar<\mermin@label@in@display@ov
+    {\@ifnextchar[\mermin@label@in@display@opt
+                 \mermin@label@in@display@noarg}}
+\def\mermin@label@in@display@ov<#1>{\mermin@label@in@display}
+\def\mermin@label@in@display@opt[#1]#2{\mermin@real@in@display{[#1]{#2}}}
+\def\mermin@label@in@display@noarg#1{\mermin@real@in@display{{#1}}}
+ % The forms are told apart by first character, never by scanning a bare
+ % key, which may hold an & (see \mermin@firstof).  \@charlb is a brace
+ % character of category 12.
 \def\mermin@cref@entry#1{%
   \if\mermin@firstof{#1}[\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
     {\mermin@cref@entry@opt#1\mermin@nil}%
@@ -780,18 +833,6 @@
   \mermin@real@in@display{[#1]{#2}}}
 %    \end{macrocode}
 % \end{macro}
-%
-% \begin{macro}{\mermin@label@in@display}
-% A real \cs{label} in a display arrives here, with \textsf{cleveref}'s
-% optional argument passed through untouched.
-%    \begin{macrocode}
-\def\mermin@label@in@display{%
-  \@ifnextchar<\mermin@label@in@display@ov
-    {\@ifnextchar[\mermin@label@in@display@opt\mermin@label@in@display@noarg}}
-\def\mermin@label@in@display@ov<#1>{\mermin@label@in@display}
-\def\mermin@label@in@display@opt[#1]#2{\mermin@real@in@display{[#1]{#2}}}
-\def\mermin@label@in@display@noarg#1{\mermin@real@in@display{{#1}}}
-%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\ltx@label}
@@ -800,8 +841,9 @@
 % and |\label@in@display| in |\AtBeginDocument| code.
 % The package wraps them in the |begindocument/end| hook, which runs after
 % all such code, so that load order does not matter.
-% The new |\ltx@label| writes the primary label as before and then, if
-% the queue belongs to it, every queued key.
+% The new |\ltx@label| writes the primary label as before and then, if the
+% queue belongs to it, every queued key except the primary one, which an
+% |\aka{A}\aka{K}\label{K}| line would otherwise write twice.
 % The new |\label@in@display| sends \cs{alsolabel} and \cs{label} their
 % separate ways.
 %    \begin{macrocode}
@@ -821,8 +863,6 @@
   \let\mermin@orig@label@in@display\label@in@display
   \ifdefined\cref@old@label@in@display
     \let\mermin@cref@old\cref@old@label@in@display
-    % cleveref's multline trial pass calls this directly; give it the same
-    % treatment as \label, which \mermin@call@orig undoes locally.
     \def\cref@old@label@in@display#1{\mermin@cref@entry{#1}}%
   \fi
   \def\label@in@display{%
@@ -831,68 +871,208 @@
     \else
       \expandafter\mermin@label@in@display
     \fi}%
-}
+  \let\mermin@doclabel\label}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\eqcite}
-% \cs{eqcite} resolves its argument to a key: the argument itself, unless only
-% |eq:|\meta{phrase} is defined, in which case that key is used.
-% Before the first run defines any label, the key is the argument itself,
-% so the usual undefined-reference warning names it, and the argument is
-% printed verbatim: it may be a key such as |E_field| whose phrase is not
-% yet known, and would stop the run if typeset.
-% It warns if the key is defined but was not recorded as an equation.
-% It then prints the typeset phrase recorded for that key, or the argument
-% if none was recorded, a tie, and the equation number from \cs{eqref},
-% which \textsf{hyperref} makes a link.
-% In math mode the whole citation is set as text, with \cs{text}.
+% \subsection{Documents read through \textsf{xr}}\label{impl:xr}
+%
+% \textsf{xr} and \textsf{xr-hyper} import another document's labels, as
+% for a paper and its supplement, by reading that document's \texttt{.aux}
+% file a line at a time with |\XR@test|, which keeps only \cs{newlabel}
+% and \cs{bibcite} lines.
+% A wrapper also imports the records, with the external document's prefix
+% added to each key.
+% For every equation key it imports, it stores the text that \cs{eqcite}
+% prints when the key has no phrase, the key without the prefix (and
+% without |eq:|), in |\mermin@xrdef@|\meta{prefixed key}; and for a key
+% |eq:|\meta{rest} it defines the |eq:| fallback
+% |\mermin@xreq@|\meta{prefix}\meta{rest}, which \cs{eqcite}'s resolver
+% calls.
+% A document that does not use the package records no equations; its file
+% has no mark, and all its labels are imported as equations rather than
+% warned about.
+% The wrapper is installed once, whether \textsf{xr} is loaded before or
+% after this package; an \cs{externaldocument} called before the package
+% is loaded is beyond its reach.
 %    \begin{macrocode}
-\NewDocumentCommand\eqcite{m}{%
-  \mermin@resolvekey{#1}%
-  \@ifundefined{r@\mermin@key}{}{%
+\long\def\mermin@xr@test#1#2#3#4\XR@{%
+   % \eq and \aka in titles stored in the other file are expanded here, in
+   % the preamble, before the short names exist.
+  \ifdefined\eq\else\let\eq\eqcite\fi
+  \ifdefined\aka\else\let\aka\alsolabel\fi
+  \ifx#1\mermin@auxmark
+    \def\mermin@xr@marked{}%
+  \else\ifx#1\mermin@equation
+    \mermin@xr@import{#2}%
+  \else\ifx#1\mermin@newphrase
+    \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
+  \else\ifx#1\newlabel
+    \ifdefined\mermin@xr@marked\else\mermin@xr@import{#2}\fi
+  \fi\fi\fi\fi
+  \mermin@xr@orig#1{#2}{#3}#4\XR@}
+\def\mermin@xr@import#1{%
+  \@xp\gdef\csname mermin@eq@\XR@prefix#1\endcsname{}%
+  \mermin@ifeqprefix{#1}%
+    {\@xp\mermin@xr@eqkey\@xp{\@gobblethree#1}}%
+    {\@xp\xdef\csname mermin@xrdef@\XR@prefix#1\endcsname
+       {\unexpanded{#1}}}}
+ % For a key eq:<rest>: the text is <rest>, and \mermin@xreq@<prefix><rest>
+ % takes the resolver's continuation and passes it <prefix>eq:<rest>.
+\def\mermin@xr@eqkey#1{%
+  \@xp\xdef\csname mermin@xrdef@\XR@prefix eq:#1\endcsname{\unexpanded{#1}}%
+  \@xp\xdef\csname mermin@xreq@\XR@prefix#1\endcsname##1{%
+    ##1{\XR@prefix\unexpanded{eq:#1}}}}
+\def\mermin@xr@patch{%
+  \ifdefined\mermin@xr@orig\else
+    \let\mermin@xr@orig\XR@test
+    \let\XR@test\mermin@xr@test
+  \fi}
+\AddToHook{package/xr/after}{\mermin@xr@patch}
+\AddToHook{package/xr-hyper/after}{\mermin@xr@patch}
+\@ifpackageloaded{xr}{\mermin@xr@patch}{}
+\@ifpackageloaded{xr-hyper}{\mermin@xr@patch}{}
+%    \end{macrocode}
+%
+% \subsection{Citing with \cs{eqcite}}\label{impl:cite}
+%
+% \begin{macro}{\mermin@resolve}
+% |\mermin@resolve{|\meta{argument}|}{|\meta{continuation}|}| finds the key
+% \meta{argument} cites: the argument itself if it is a label, else
+% |eq:|\meta{argument}, else the |eq:| key of another document that
+% \textsf{xr} imported, else the argument, which is then undefined.
+% It expands to \meta{continuation}|{|\meta{key}|}|.
+% It is expandable, so that the same code serves bookmarks, and passes the
+% key as an argument rather than storing it, so that nothing depends on a
+% macro that a group might end: \textsf{ulem} typesets each word in a group
+% of its own.
+% |\@ifundefined| treats a label made |\relax| by an earlier failed
+% \cs{ref} as undefined.
+%    \begin{macrocode}
+\def\mermin@resolve#1#2{%
+  \@ifundefined{r@#1}%
+    {\@ifundefined{r@eq:#1}%
+       {\@ifundefined{mermin@xreq@#1}%
+          {#2{#1}}%
+          {\csname mermin@xreq@#1\endcsname{#2}}}%
+       {#2{eq:#1}}}%
+    {#2{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@keytext}
+% When a key has no typeset phrase, \cs{eqcite} prints the key itself as
+% the phrase: for a key imported through \textsf{xr}, without the prefix,
+% and otherwise without a leading |eq:|.
+% |\mermin@keytext{|\meta{argument}|}{|\meta{key}|}| expands to that text.
+%    \begin{macrocode}
+\def\mermin@keytext#1#2{%
+  \@ifundefined{mermin@xrdef@#2}%
+    {\mermin@ifeqprefix{#1}{\@gobblethree#1}{#1}}%
+    {\csname mermin@xrdef@#2\endcsname}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\eqcite}
+% \begin{macro}{\mermin@cite}
+% \cs{eqcite} resolves its argument and passes the argument and the key to
+% |\mermin@cite|, which warns if the key is a label but not an equation,
+% and prints the phrase, a tie, and the number from \cs{eqref}, which
+% \textsf{hyperref} makes a link.
+% In math mode the whole citation is set as text.
+%    \begin{macrocode}
+\NewDocumentCommand\eqcite{m}{\mermin@resolve{#1}{\mermin@cite{#1}}}
+\def\mermin@cite#1#2{%
+  \@ifundefined{r@#2}{}{%
     \ifdefined\mermin@marked
-      \@ifundefined{mermin@eq@\mermin@key}{%
-        \PackageWarning{mermin}{`#1' is not an equation label,\MessageBreak
-          yet \mermin@eqcs\space prints a parenthesized equation
-          number;\MessageBreak use \string\ref\space or \string\cref\space
-          for figures, sections, and theorems}}{}%
+      \@ifundefined{mermin@eq@#2}%
+        {\PackageWarning{mermin}{`#1' is not an equation label,\MessageBreak
+           yet \mermin@eqcs\space prints a parenthesized equation
+           number;\MessageBreak use \string\ref\space or \string\cref\space
+           for figures, sections, and theorems}}%
+        {}%
     \fi}%
   \ifmmode\@xp\text\else\@xp\@firstofone\fi
-  {\@ifundefined{mermin@ph@\mermin@key}%
-     {\@ifundefined{r@\mermin@key}%
-        {\mermin@ifunprintable{#1}{\mermin@verbatim{#1}}{#1}}%
-        {\@ifundefined{mermin@xrdef@\mermin@key}%
-           {\def\mermin@text{#1}%
-            \mermin@ifeqprefix{#1}%
-              {\@xp\def\@xp\mermin@text\@xp{\@gobblethree#1}}{}}%
-           {\@xp\let\@xp\mermin@text
-              \csname mermin@xrdef@\mermin@key\endcsname}%
-         \@xp\mermin@ifunprintable\@xp{\mermin@text}%
-           {\@ifundefined{mermin@xrdef@\mermin@key}%
-              {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
-                 text,\MessageBreak so it is printed verbatim; where it is
-                 defined, write\MessageBreak
-                 \mermin@akacs[\mermin@phrasemeta]{\mermin@key}}}%
-              {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
-                 text,\MessageBreak so it is printed verbatim; give it a
-                 phrase in the\MessageBreak document that defines
-                 `\mermin@text'}}%
-            \@xp\mermin@verbatim\@xp{\mermin@text}}%
-           {\mermin@text}}}%
-     {\csname mermin@ph@\mermin@key\endcsname}%
-   \@xp\mermin@tail\@xp{\mermin@key}}%
-}
-\def\mermin@phrasemeta{<phrase>}
-\def\mermin@tail#1{~\eqref{#1}}
+    {\mermin@phrase{#1}{#2}~\eqref{#2}}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\mermin@phrase}
+% The phrase is the typeset phrase recorded for the key, or else the
+% key's text, printed verbatim if it is not printable text.
+% Once the label exists, a verbatim key also warns, saying where to give
+% it a phrase; before the first run defines it, every key is quietly
+% verbatim if need be, because its phrase may simply not be known yet.
+%    \begin{macrocode}
+\def\mermin@phrase#1#2{%
+  \@ifundefined{mermin@ph@#2}%
+    {\protected@edef\mermin@text{\mermin@keytext{#1}{#2}}%
+     \@xp\mermin@ifunprintable\@xp{\mermin@text}%
+       {\@ifundefined{r@#2}{}{\mermin@warn@unprintable{#1}{#2}}%
+        \@xp\mermin@verbatim\@xp{\mermin@text}}%
+       {\mermin@text}}%
+    {\csname mermin@ph@#2\endcsname}}
+\def\mermin@warn@unprintable#1#2{%
+  \@ifundefined{mermin@xrdef@#2}%
+    {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
+       text,\MessageBreak so it is printed verbatim; where it is
+       defined, write\MessageBreak \mermin@akacs[<phrase>]{#2}}}%
+    {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
+       text,\MessageBreak so it is printed verbatim; give it a
+       phrase in the\MessageBreak document that defines
+       `\mermin@text'}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsection{Headings, bookmarks, and running heads}\label{impl:heads}
+%
+% \begin{macro}{\mermin@pdf@eq}
+% \textsf{hyperref}'s bookmarks need an expandable \cs{eqcite}, which
+% gives the phrase or key text and the number as plain text.
+% It uses the same resolver.
+%    \begin{macrocode}
+\def\mermin@pdf@eq#1{\mermin@resolve{#1}{\mermin@pdf@cite{#1}}}
+\def\mermin@pdf@cite#1#2{%
+  \@ifundefined{mermin@ph@#2}%
+    {\mermin@keytext{#1}{#2}}%
+    {\csname mermin@ph@#2\endcsname}%
+  \space(\ref{#2})}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@stripaka}
+% \textsf{nameref} takes the name of a section or a caption from its
+% title, through \textsf{gettitlestring}.
+% That package's default method, which does not expand the title, removes
+% \cs{label} from it but knows nothing of \cs{alsolabel}, which would stay
+% in the name and define its key again wherever the name is typeset.
+% The package wraps the method to remove \cs{alsolabel} too, with its
+% arguments: spaces around it go with it at the end of the title, but in
+% the middle they stay, so that |Chiral \aka{chiral}fermions| keeps its
+% space.
+% \cs{aka} is removed only when it is this package's.
+% (The expanding method needs nothing: \cs{alsolabel} expands to nothing
+% there, since that method disables \cs{label}.)
+%    \begin{macrocode}
 \ExplSyntaxOn
-\regex_const:Nn \c__mermin_long_regex
-  { \s* (?: \c{(?:alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. \s* )+ \Z
-    | \c{(?:alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
-\regex_const:Nn \c__mermin_aka_regex
-  { \s* (?: \c{(?:aka|alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. \s* )+ \Z
-    | \c{(?:aka|alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
+ % One pattern for both lists of names: a run of the commands, with their
+ % <overlay>, [phrase], and {key}, at the end of the title, spaces and all;
+ % or one of them anywhere else, spaces kept.
+\cs_new:Npn \__mermin_aka_pattern:n #1
+  {
+    \exp_not:n
+      {
+        \s* (?: \c{(?:#1)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE.
+          \s* )+ \Z
+        | \c{(?:#1)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE.
+      }
+  }
+\exp_args:NNx \regex_const:Nn \c__mermin_aka_regex
+  { \__mermin_aka_pattern:n { aka|alsolabel|mermin@alsolabel } }
+\exp_args:NNx \regex_const:Nn \c__mermin_long_regex
+  { \__mermin_aka_pattern:n { alsolabel|mermin@alsolabel } }
 \cs_new_protected:Npn \mermin@stripaka
   {
     \ifx \aka \mermin@alsolabel@short
@@ -902,76 +1082,58 @@
     \fi
   }
 \ExplSyntaxOff
-\def\mermin@ifeqprefix#1{%
-  \@xp\mermin@ifeqprefix@\detokenize{#1}\relax\relax\relax\mermin@nil}
-\def\mermin@ifeqprefix@#1#2#3#4\mermin@nil{%
-  \ifnum\if e#1\if q#2\if :#3 1\else 0\fi\else 0\fi\else 0\fi=1
-    \@xp\@firstoftwo\else\@xp\@secondoftwo\fi}
-\def\mermin@pdftext#1{\mermin@ifeqprefix{#1}{\@gobblethree#1}{#1}}
-\def\mermin@akacs{\string\alsolabel}
-\def\mermin@eqcs{\string\eqcite}
-\def\mermin@verbatim#1{{\normalfont\ttfamily\detokenize{#1}}}
-\edef\mermin@specials{\detokenize{_^$&<>|}\@percentchar\@backslashchar}
-\def\mermin@ifunprintable#1{%
-  \edef\mermin@tmp{\detokenize{#1}}%
-  \let\mermin@bad\@empty
-  \@xp\@tfor\@xp\mermin@c\@xp:\@xp=\mermin@specials\do{%
-    \edef\reserved@a{\noexpand\in@{\mermin@c}{\mermin@tmp}}\reserved@a
-    \ifin@\def\mermin@bad{x}\fi}%
-  \ifx\mermin@bad\@empty\@xp\@secondoftwo\else\@xp\@firstoftwo\fi}
-\def\mermin@resolvekey#1{%
-  \def\mermin@key{#1}%
-  \@ifundefined{r@#1}{%
-    \@ifundefined{r@eq:#1}%
-      {\@ifundefined{mermin@xreq@#1}{}%
-         {\edef\mermin@key{\csname mermin@xreq@#1\endcsname}}}%
-      {\def\mermin@key{eq:#1}}%
-  }{}%
-}
+\AddToHook{begindocument/end}{%
+  \ifdefined\GetTitleStringNonExpand
+    \let\mermin@gts@orig\GetTitleStringNonExpand
+    \def\GetTitleStringNonExpand#1{\mermin@gts@orig{#1}\mermin@stripaka}%
+  \fi}
 %    \end{macrocode}
 % \end{macro}
+%
+% In text that \cs{MakeUppercase} changes, such as running heads, the
+% argument of \cs{eqcite} is a key and must not change; nor may the key of
+% |\mermin@alsolabel|.
+% The \LaTeX\ kernel from 2022-06 keeps the argument of every command in
+% |\l_text_case_exclude_arg_tl| as written.
+%    \begin{macrocode}
+\AddToHook{begindocument/end}{%
+  \@ifundefined{l_text_case_exclude_arg_tl}{}{%
+    \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
+      {\eqcite\mermin@alsolabel}%
+    \ifx\eq\mermin@eqcite@short
+      \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname{\eq}%
+    \fi}}
+%    \end{macrocode}
+%
+% \subsection{The short names}\label{impl:short}
 %
 % \begin{macro}{\eq}
 % \begin{macro}{\aka}
 % The short names \cs{eq} and \cs{aka} may already be taken, \cs{eq} for
 % instance by \textsf{nccmath}.
-% Each is therefore assigned only at |\begin{document}|, in the hook
-% |env/document/begin|, after every package and the preamble have had the
-% chance to define it, and only if it is still free; not later, because
-% \textsf{beamer} builds the PDF title in that same hook, ordered after
-% this one, and its themes typeset section titles, which may hold
-% \cs{eq}, in their |\AtBeginDocument| code.
-% Otherwise the existing command is kept and the user is told to write the
-% long name.
+% Each is therefore assigned only at |\begin{document}|, after every
+% package and the preamble have had the chance to define it, and only if
+% it is still free; otherwise the existing command is kept and the user is
+% told to write the long name.
 % Each short name is a copy of the long one made with \cs{let}, so it
-% keeps the long one's behaviour in moving arguments.
-% For \textsf{hyperref}'s bookmarks \cs{aka} and \cs{alsolabel} vanish,
-% and \cs{eq} and \cs{eqcite} expand to the phrase and \cs{ref} of the
-% number.
-% In text that \cs{MakeUppercase} changes, such as running heads, the
-% argument of \cs{eq} is kept as written, since it is a key.
+% behaves like it in moving arguments.
+% The warnings then name the commands the document can use.
+% The bookmark versions of the commands are installed at the same time.
 %    \begin{macrocode}
+\let\mermin@alsolabel@short\alsolabel
+\let\mermin@eqcite@short\eqcite
+\def\mermin@akacs{\string\alsolabel}
+\def\mermin@eqcs{\string\eqcite}
 \def\mermin@shortname#1#2{%
   \@ifundefined{#1}%
     {\@xp\let\csname #1\endcsname#2}%
     {\PackageWarningNoLine{mermin}{\@backslashchar#1 was already defined,
       by a package or\MessageBreak the preamble, and is left alone; write
       \string#2\space instead}}}
-\AddToHook{begindocument/end}{%
-  \ifdefined\GetTitleStringNonExpand
-    \let\mermin@gts@orig\GetTitleStringNonExpand
-    \def\GetTitleStringNonExpand#1{%
-      \mermin@gts@orig{#1}\mermin@stripaka}%
-  \fi
-  \let\mermin@doclabel\label
-  \@ifundefined{l_text_case_exclude_arg_tl}{}{%
-    \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
-      {\eqcite\mermin@alsolabel}%
-    \ifx\eq\mermin@eqcite@short
-      \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
-        {\eq}%
-    \fi}%
-}
+ % env/document/begin, not begindocument/before or later: beamer builds
+ % the PDF title, which may hold \eq, in this same hook (ordered after
+ % this code by the rule below), and its themes typeset section titles in
+ % \AtBeginDocument code.
 \AddToHook{env/document/begin}[mermin]{%
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
@@ -983,27 +1145,8 @@
       \let\eqcite\mermin@pdf@eq
       \ifx\aka\mermin@alsolabel@short\let\aka\mermin@gobble@aka\fi
       \ifx\eq\mermin@eqcite@short\let\eq\mermin@pdf@eq\fi}%
-  \fi
-}
+  \fi}
 \DeclareHookRule{env/document/begin}{mermin}{before}{beamer}
-\let\mermin@alsolabel@short\alsolabel
-\let\mermin@eqcite@short\eqcite
-\def\mermin@pdf@eq#1{%
-  \ifcsname r@#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-    {\mermin@pdf@cite{#1}{#1}}%
-    {\ifcsname r@eq:#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-       {\mermin@pdf@cite{#1}{eq:#1}}%
-       {\ifcsname mermin@xreq@#1\endcsname
-          \@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-          {\mermin@pdf@cite{#1}{\csname mermin@xreq@#1\endcsname}}%
-          {\mermin@pdf@cite{#1}{#1}}}}}
-\def\mermin@pdf@cite#1#2{%
-  \ifcsname mermin@ph@#2\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-    {\csname mermin@ph@#2\endcsname}%
-    {\ifcsname mermin@xrdef@#2\endcsname
-       \@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-       {\csname mermin@xrdef@#2\endcsname}{\mermin@pdftext{#1}}}%
-  \space(\ref{#2})}
 %</package>
 %    \end{macrocode}
 % \end{macro}
