@@ -28,11 +28,13 @@
 %
 %<*driver>
 \documentclass{ltxdoc}
- % doc before v3 (LaTeX 2022-06) does not load hyperref for \href and \url.
-\IfFormatAtLeastTF{2022-06-01}{}{\usepackage[hidelinks]{hyperref}}
+\PassOptionsToPackage{hidelinks}{hyperref}
+ % doc before v3 (LaTeX 2022-06) does not load hyperref for \href and
+ % \url; hypdoc does, without breaking doc's index entries as a bare
+ % \usepackage{hyperref} would.
+\IfFormatAtLeastTF{2022-06-01}{}{\usepackage{hypdoc}}
 \usepackage{amsmath}
 \usepackage{mermin}
-\PassOptionsToPackage{hidelinks}{hyperref}
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
