@@ -541,6 +541,22 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\mermin@cref@entry}
+% \textsf{cleveref}'s \textsf{multline} trial pass hands its inner hook the
+% key braced, |{|\meta{key}|}|, with \textsf{amsmath} before 2025, but bare
+% with \textsf{amsmath}~2.17z.
+% This accepts either, or |[|\meta{type}|]{|\meta{key}|}|, and passes the
+% key on as \cs{label} would.
+%    \begin{macrocode}
+\def\mermin@cref@entry{%
+  \@ifnextchar[\mermin@cref@entry@opt\mermin@cref@entry@plain}
+\def\mermin@cref@entry@opt[#1]#2\mermin@nil{%
+  \mermin@real@in@display{[#1]{#2}}}
+\def\mermin@cref@entry@plain#1\mermin@nil{%
+  \mermin@real@in@display{{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\mermin@label@in@display}
 % A real \cs{label} in a display arrives here, with \textsf{cleveref}'s
 % optional argument passed through untouched.
@@ -580,7 +596,7 @@
     \let\mermin@cref@old\cref@old@label@in@display
     % cleveref's multline trial pass calls this directly; give it the same
     % treatment as \label, which \mermin@call@orig undoes locally.
-    \def\cref@old@label@in@display#1{\mermin@real@in@display{#1}}%
+    \def\cref@old@label@in@display#1{\mermin@cref@entry#1\mermin@nil}%
   \fi
   \def\label@in@display{%
     \ifmermin@also
