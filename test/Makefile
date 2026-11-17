@@ -104,6 +104,8 @@ check:
 	  pdftotext $$c.pdf - | grep -qF 'cf. anomaly condition (1) and' || { echo "$$c: \\eq in math mode"; exit 1; }; \
 	done
 	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMEREF: Methods.' || { echo "edge-cleveref: \\nameref of a title with \\aka"; exit 1; }
+	@pdftotext edge-cleveref.pdf - | grep -qF 'NAMESPACE: Chiral fermions.' || { echo "edge-cleveref: \\aka mid-title ate a space"; exit 1; }
+	@pdftotext edge-plain.pdf - | grep -qF 'KEY: key (13).' || { echo "edge-plain: a label named key"; exit 1; }
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
 	@printf '%s\n' 'edge-case checks pass'
 	@# A document that drops mermin must still read an excluded file's .aux.

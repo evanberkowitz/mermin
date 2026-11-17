@@ -226,14 +226,20 @@
 % when \textsf{nameref} is not loaded; with \textsf{nameref} (and so
 % \textsf{hyperref}) either place works.
 % On a line without a number, such as one with \cs{notag} or in
-% |equation*|, \cs{aka} does what \cs{label} does there, which is seldom
-% what is wanted (in \textsf{align} it labels the next numbered line);
-% put it on a numbered line.
+% |equation*|, \cs{aka} is seldom what is wanted: in \textsf{align} it
+% labels the next numbered line, even one with its own \cs{label}, where
+% two \cs{label}s would be an error; put it on a numbered line.
+% \textsf{witharrows}' |DispWithArrows| is not supported.
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
-% In a heading that a class sets in capitals, the phrase is left as
-% written, since it is printed from its key; give such a heading a short
-% form for the running head, as in |\section[|\ldots|]{|\ldots|}|.
+% In a heading that a class sets in capitals with \cs{MakeUppercase}, the
+% phrase is left as written, since it is printed from its key; give such a
+% heading a short form for the running head, as in
+% |\section[|\ldots|]{|\ldots|}|.
+% Classes that use the primitive \cs{uppercase}, such as \textsf{mnras}
+% and \textsf{aastex631}, capitalize the key itself, which breaks
+% \cs{eq} there as it breaks \cs{eqref}; wrap such a citation in a
+% command defined in the preamble.
 %
 % \DescribeMacro{\alsolabel}
 % \DescribeMacro{\eqcite}
@@ -831,7 +837,7 @@
 % In math mode the whole citation is set as text, with \cs{text}.
 %    \begin{macrocode}
 \NewDocumentCommand\eqcite{m}{%
-  \mermin@eq@key{#1}%
+  \mermin@resolvekey{#1}%
   \@ifundefined{r@\mermin@key}{}{%
     \ifdefined\mermin@marked
       \@ifundefined{mermin@eq@\mermin@key}{%
@@ -868,11 +874,11 @@
 \def\mermin@phrasemeta{<phrase>}
 \ExplSyntaxOn
 \regex_const:Nn \c__mermin_long_regex
-  { \s* \c{(?:alsolabel|mermin@alsolabel)}
-    (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
+  { \s* (?: \c{(?:alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. \s* )+ \Z
+    | \c{(?:alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
 \regex_const:Nn \c__mermin_aka_regex
-  { \s* \c{(?:aka|alsolabel|mermin@alsolabel)}
-    (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
+  { \s* (?: \c{(?:aka|alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. \s* )+ \Z
+    | \c{(?:aka|alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. }
 \cs_new_protected:Npn \mermin@stripaka
   {
     \ifx \aka \mermin@alsolabel@short
@@ -899,7 +905,7 @@
     \edef\reserved@a{\noexpand\in@{\mermin@c}{\mermin@tmp}}\reserved@a
     \ifin@\def\mermin@bad{x}\fi}%
   \ifx\mermin@bad\@empty\@xp\@secondoftwo\else\@xp\@firstoftwo\fi}
-\def\mermin@eq@key#1{%
+\def\mermin@resolvekey#1{%
   \def\mermin@key{#1}%
   \@ifundefined{r@#1}{%
     \@ifundefined{r@eq:#1}%
@@ -915,9 +921,10 @@
 % \begin{macro}{\aka}
 % The short names \cs{eq} and \cs{aka} may already be taken, \cs{eq} for
 % instance by \textsf{nccmath}.
-% Each is therefore assigned only at |begindocument/end|, after every
+% Each is therefore assigned only at |begindocument/before|, after every
 % package and the preamble have had the chance to define it, and only if it
-% is still free.
+% is still free; not later, because \textsf{beamer} themes typeset section
+% titles, which may hold \cs{eq}, in their own |\AtBeginDocument| code.
 % Otherwise the existing command is kept and the user is told to write the
 % long name.
 % Each short name is a copy of the long one made with \cs{let}, so it
@@ -940,11 +947,7 @@
     \def\GetTitleStringNonExpand#1{%
       \mermin@gts@orig{#1}\mermin@stripaka}%
   \fi
-  \mermin@shortname{eq}\eqcite
-  \mermin@shortname{aka}\alsolabel
   \let\mermin@doclabel\label
-  \ifx\aka\alsolabel\def\mermin@akacs{\string\aka}\fi
-  \ifx\eq\eqcite\def\mermin@eqcs{\string\eq}\fi
   \ifdefined\pdfstringdefDisableCommands
     \pdfstringdefDisableCommands{%
       \let\alsolabel\mermin@gobble@aka
@@ -959,6 +962,12 @@
       \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
         {\eq}%
     \fi}%
+}
+\AddToHook{begindocument/before}{%
+  \mermin@shortname{eq}\eqcite
+  \mermin@shortname{aka}\alsolabel
+  \ifx\aka\alsolabel\def\mermin@akacs{\string\aka}\fi
+  \ifx\eq\eqcite\def\mermin@eqcs{\string\eq}\fi
 }
 \let\mermin@alsolabel@short\alsolabel
 \let\mermin@eqcite@short\eqcite

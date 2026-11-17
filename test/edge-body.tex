@@ -30,4 +30,10 @@ BOTH: \eq{alias}; \eq{both}.
 PREFIX: \eq{eq:prefixed}; \eq{texted}.
 % nameref takes a title's name without the \aka in it.
 \ifdefined\nameref NAMEREF: \nameref*{methods}.\fi
+% A label named like one of mermin's internal macros.
+\begin{equation} k=12 \label{key} \end{equation}
+KEY: \eq{key}.
+% An \aka inside a title keeps the spaces around it in nameref's name.
+\section{Chiral \aka{chiral}fermions}
+\ifdefined\nameref NAMESPACE: \nameref*{chiral}.\fi
 \end{document}
