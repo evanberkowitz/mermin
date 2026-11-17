@@ -172,9 +172,9 @@
 % printable text, such as |E_field|, also needs a phrase.
 % Without one \cs{eq} prints the key verbatim and, once the label exists,
 % warns.
-% To give a phrase to a line that already has a \cs{label}, replace the
-% \cs{label}: |\label{E_field}| becomes |\aka[$E$ field]{E_field}|;
-% keeping both defines the key twice.
+% To give a phrase to a line that already has a \cs{label}, add \cs{aka}
+% with the same key, |\label{E_field}\aka[$E$ field]{E_field}|, or replace
+% the \cs{label} with it.
 % A phrase with mathematics is dropped from PDF bookmarks, as mathematics
 % is from any bookmark; \textsf{hyperref}'s \cs{texorpdfstring} gives a
 % plain-text form, as in |\aka[\texorpdfstring{$E$}{E} field]{E_field}|.
@@ -225,6 +225,9 @@
 % current section; put it on a numbered line.
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
+% In a heading that a class sets in capitals, the phrase is left as
+% written, since it is printed from its key; give such a heading a short
+% form for the running head, as in |\section[|\ldots|]{|\ldots|}|.
 %
 % \DescribeMacro{\alsolabel}
 % \DescribeMacro{\eqcite}
@@ -243,7 +246,8 @@
 % the keys given in the enclosing \textsf{equation}), and
 % \textsf{subequations}, and in \textsf{empheq}.
 % It works with \textsf{hyperref} and \textsf{cleveref} loaded either
-% before or after it.
+% before or after it; it loads \textsf{amsmath} itself, which
+% \textsf{cleveref} still requires to be loaded before it.
 % It requires a \LaTeX\ format from 2021-11-15 or later, for the
 % hooks it uses.
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
@@ -256,7 +260,8 @@
 % and the kernel's \textsf{eqnarray} are supported.
 % So are \textsf{xr} and \textsf{xr-hyper}: |\eq{S-|\meta{key}|}| cites an
 % equation of a document loaded with |\externaldocument[S-]|, and prints
-% its phrase, or its key without the prefix.
+% its phrase, or its key without the prefix; the |eq:| fallback reaches
+% it too, so |\eq{S-sum rule}| cites |\label{eq:sum rule}| there.
 % \textsf{autonum} is not supported: it copies \cs{label} before this
 % package can attach its extra keys, and numbers a line by its first key only.
 % \cs{aka}, like \cs{label}, vanishes from tables of contents, running
@@ -488,12 +493,25 @@
   \ifdefined\aka\else\let\aka\alsolabel\fi
   \ifx#1\mermin@equation
     \mermin@equation{\XR@prefix#2}%
+    \def\mermin@xr@key{#2}%
+    \mermin@xr@eqsplit\relax#2\mermin@stop eq:\mermin@stop\mermin@nil
     \@ifundefined{mermin@ph@\XR@prefix#2}%
-      {\@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#2}}{}%
+      {\@xp\xdef\csname mermin@ph@\XR@prefix#2\endcsname
+         {\unexpanded\@xp{\mermin@xr@rest}}}{}%
   \else\ifx#1\mermin@newphrase
     \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
   \fi\fi
   \mermin@xr@orig#1{#2}{#3}#4\XR@}
+\def\mermin@xr@eqsplit#1eq:#2\mermin@stop#3\mermin@nil{%
+  \def\mermin@tmp{#1}%
+  \ifx\mermin@tmp\mermin@relax
+    \def\mermin@xr@rest{#2}%
+    \@xp\xdef\csname mermin@xreq@\XR@prefix#2\endcsname
+      {\XR@prefix\unexpanded{eq:#2}}%
+  \else
+    \@xp\def\@xp\mermin@xr@rest\@xp{\mermin@xr@key}%
+  \fi}
+\def\mermin@relax{\relax}
 \def\mermin@xr@patch{%
   \ifdefined\mermin@xr@orig\else
     \let\mermin@xr@orig\XR@test
@@ -669,7 +687,7 @@
     \global\let\df@label\@empty
     \mermin@call@orig{#1}%
     \global\let\mermin@tag\df@label
-    \mermin@enqueue
+    \ifx\mermin@form\df@label\else\mermin@enqueue\fi
     \gdef\mermin@promoted{}%
   \else
     \gdef\mermin@promoted{}%
@@ -785,7 +803,7 @@
            {\PackageWarning{mermin}{`#1' has no typeset phrase and is not
               text,\MessageBreak so it is printed verbatim; give the line
               \MessageBreak\string\aka[\mermin@phrasemeta]{\mermin@key}\space
-              in place of\MessageBreak\string\label{\mermin@key}}%
+              beside its\MessageBreak\string\label{\mermin@key}}%
             \mermin@verbatim{#1}}%
            {#1}}}%
      {\csname mermin@ph@\mermin@key\endcsname}%
@@ -804,7 +822,10 @@
 \def\mermin@eq@key#1{%
   \def\mermin@key{#1}%
   \@ifundefined{r@#1}{%
-    \@ifundefined{r@eq:#1}{}{\def\mermin@key{eq:#1}}%
+    \@ifundefined{r@eq:#1}%
+      {\@ifundefined{mermin@xreq@#1}{}%
+         {\edef\mermin@key{\csname mermin@xreq@#1\endcsname}}}%
+      {\def\mermin@key{eq:#1}}%
   }{}%
 }
 %    \end{macrocode}
@@ -857,7 +878,11 @@
   \ifcsname r@#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
     {\mermin@pdf@cite{#1}{#1}}%
     {\ifcsname r@eq:#1\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
-       {\mermin@pdf@cite{#1}{eq:#1}}{\mermin@pdf@cite{#1}{#1}}}}
+       {\mermin@pdf@cite{#1}{eq:#1}}%
+       {\ifcsname mermin@xreq@#1\endcsname
+          \@xp\@firstoftwo\else\@xp\@secondoftwo\fi
+          {\mermin@pdf@cite{#1}{\csname mermin@xreq@#1\endcsname}}%
+          {\mermin@pdf@cite{#1}{#1}}}}}
 \def\mermin@pdf@cite#1#2{%
   \ifcsname mermin@ph@#2\endcsname\@xp\@firstoftwo\else\@xp\@secondoftwo\fi
     {\csname mermin@ph@#2\endcsname}{#1}%

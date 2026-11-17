@@ -76,7 +76,7 @@ or next to the paper that uses it. To typeset the manual, run
 and builds the index, and a paper's build can use the clone directly with
 `TEXINPUTS=/path/to/mermin:`.
 
-Requires a LaTeX format from 2021-11-15 or later, and amsmath.
+Requires a LaTeX format from 2021-11-15 or later. Loads amsmath.
 
 ### arXiv
 
