@@ -230,6 +230,11 @@
 % labels the next numbered line, even one with its own \cs{label}, where
 % two \cs{label}s would be an error; put it on a numbered line.
 % \textsf{witharrows}' |DispWithArrows| is not supported.
+% \textsf{showkeys} and \textsf{showlabels} show the first key of a
+% display line, not the keys \cs{aka} adds to it.
+% The \textsf{iopart} class conflicts with \textsf{amsmath}, which this
+% package loads; it applies IOP's usual remedy, undefining |equation*|
+% first, when \textsf{iopart} is the class.
 % \cs{eq} is for equations only, since it prints a parenthesized number,
 % and it warns when its key names anything else.
 % In a heading that a class sets in capitals with \cs{MakeUppercase}, the
@@ -343,6 +348,10 @@
 %
 %    \begin{macrocode}
 %<*package>
+\@ifclassloaded{iopart}{%
+  \@ifpackageloaded{amsmath}{}{%
+    \expandafter\let\csname equation*\endcsname\relax
+    \expandafter\let\csname endequation*\endcsname\relax}}{}
 \RequirePackage{amsmath}
 %    \end{macrocode}
 %
@@ -617,6 +626,10 @@
 \AddToHook{env/subnumcases/begin}{\mermin@marklabels}
 \AddToHook{env/IEEEeqnarray/begin}{\mermin@marklabels}
 \AddToHook{env/IEEEeqnarray*/begin}{\mermin@marklabels}
+\AddToHook{env/subeqnarray/begin}{%
+  \mermin@marklabels
+  \let\mermin@slabel@orig\slabel
+  \def\slabel#1{\mermin@markeq{#1}\mermin@slabel@orig{#1}}}
 \def\mermin@sub@noarg#1{\mermin@markeq{#1}\mermin@sub@orig{#1}}
 \def\mermin@sub@opt[#1]#2{\mermin@markeq{#2}\mermin@sub@orig[#1]{#2}}
 \def\mermin@sub@ov<#1>#2{\mermin@markeq{#2}\mermin@sub@orig<#1>{#2}}
@@ -869,9 +882,10 @@
             \@xp\mermin@verbatim\@xp{\mermin@text}}%
            {\mermin@text}}}%
      {\csname mermin@ph@\mermin@key\endcsname}%
-   ~\@xp\eqref\@xp{\mermin@key}}%
+   \@xp\mermin@tail\@xp{\mermin@key}}%
 }
 \def\mermin@phrasemeta{<phrase>}
+\def\mermin@tail#1{~\eqref{#1}}
 \ExplSyntaxOn
 \regex_const:Nn \c__mermin_long_regex
   { \s* (?: \c{(?:alsolabel|mermin@alsolabel)} (?: \< .*? \> )? (?: \[ .*? \] )? \cB. .*? \cE. \s* )+ \Z
@@ -921,10 +935,12 @@
 % \begin{macro}{\aka}
 % The short names \cs{eq} and \cs{aka} may already be taken, \cs{eq} for
 % instance by \textsf{nccmath}.
-% Each is therefore assigned only at |begindocument/before|, after every
-% package and the preamble have had the chance to define it, and only if it
-% is still free; not later, because \textsf{beamer} themes typeset section
-% titles, which may hold \cs{eq}, in their own |\AtBeginDocument| code.
+% Each is therefore assigned only at |\begin{document}|, in the hook
+% |env/document/begin|, after every package and the preamble have had the
+% chance to define it, and only if it is still free; not later, because
+% \textsf{beamer} builds the PDF title in that same hook, ordered after
+% this one, and its themes typeset section titles, which may hold
+% \cs{eq}, in their |\AtBeginDocument| code.
 % Otherwise the existing command is kept and the user is told to write the
 % long name.
 % Each short name is a copy of the long one made with \cs{let}, so it
@@ -948,13 +964,6 @@
       \mermin@gts@orig{#1}\mermin@stripaka}%
   \fi
   \let\mermin@doclabel\label
-  \ifdefined\pdfstringdefDisableCommands
-    \pdfstringdefDisableCommands{%
-      \let\alsolabel\mermin@gobble@aka
-      \let\eqcite\mermin@pdf@eq
-      \ifx\aka\mermin@alsolabel@short\let\aka\mermin@gobble@aka\fi
-      \ifx\eq\mermin@eqcite@short\let\eq\mermin@pdf@eq\fi}%
-  \fi
   \@ifundefined{l_text_case_exclude_arg_tl}{}{%
     \@xp\g@addto@macro\csname l_text_case_exclude_arg_tl\endcsname
       {\eqcite\mermin@alsolabel}%
@@ -963,12 +972,20 @@
         {\eq}%
     \fi}%
 }
-\AddToHook{begindocument/before}{%
+\AddToHook{env/document/begin}[mermin]{%
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
   \ifx\aka\alsolabel\def\mermin@akacs{\string\aka}\fi
   \ifx\eq\eqcite\def\mermin@eqcs{\string\eq}\fi
+  \ifdefined\pdfstringdefDisableCommands
+    \pdfstringdefDisableCommands{%
+      \let\alsolabel\mermin@gobble@aka
+      \let\eqcite\mermin@pdf@eq
+      \ifx\aka\mermin@alsolabel@short\let\aka\mermin@gobble@aka\fi
+      \ifx\eq\mermin@eqcite@short\let\eq\mermin@pdf@eq\fi}%
+  \fi
 }
+\DeclareHookRule{env/document/begin}{mermin}{before}{beamer}
 \let\mermin@alsolabel@short\alsolabel
 \let\mermin@eqcite@short\eqcite
 \def\mermin@pdf@eq#1{%

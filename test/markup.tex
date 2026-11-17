@@ -1,0 +1,15 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}
+\usepackage[normalem]{ulem}\usepackage{changes}\usepackage{subeqnarray}
+\begin{document}
+% ulem and changes typeset word by word, in separate groups.
+\begin{equation} a=b \label{anomaly condition} \end{equation}
+ULEM: \sout{the \eq{anomaly condition}} \uline{and \eq{anomaly condition}}
+\deleted{deleted \eq{anomaly condition}}.
+% subeqnarray's \slabel and the group's \label are equations.
+\begin{subeqnarray}\label{system}
+  c &=& d \slabel{first row}\\
+  e &=& f \slabel{second row}
+\end{subeqnarray}
+SUBEQ: \eq{system}, \eq{first row}, \eq{second row}.
+\end{document}

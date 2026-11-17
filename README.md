@@ -36,8 +36,9 @@ replace it entirely. Every key gets the line's number and hyperref anchor,
 and `\ref`, `\eqref`, `\pageref`, and `\cref` all work. It supports the
 amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
 `subequations`), `empheq`, breqn, the cases package, IEEEtrantools'
-`IEEEeqnarray`, and `eqnarray`, with hyperref and cleveref loaded in any
-order, and works with xr and xr-hyper. `\label` itself is unchanged.
+`IEEEeqnarray`, and `eqnarray`, with hyperref and cleveref loaded before
+or after it (cleveref, as always, after amsmath), and works with xr and
+xr-hyper. `\label` itself is unchanged.
 
 `\eq{phrase}` falls back to the label `eq:phrase`, so existing `eq:` labels
 need no change. A phrase that cannot be a key, such as one with math, is

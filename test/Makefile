@@ -76,6 +76,11 @@ check:
 	@pdftotext beamer.pdf - | grep -qF 'BSUB: (3); (4).' || { echo "beamer: overlays in subequations or multline"; exit 1; }
 	@grep -qF 'newlabel{frametext}{{2}{3}' beamer.aux || { echo "beamer: overlay outside a display"; exit 1; }
 	@pdftotext beamer.pdf - | grep -qF 'BLBL: (5).' || { echo "beamer: \\label<overlay> in a display"; exit 1; }
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error iop >/dev/null || { echo "iop: LaTeX error with an iopart-like class"; exit 1; }; done
+	@pdftotext iop.pdf - | grep -qF 'IOP: the anomaly condition (1).' || { echo "iop: wrong citation"; exit 1; }
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error markup >/dev/null || { echo "markup: LaTeX error"; exit 1; }; done
+	@! grep -q 'mermin Warning' markup.log || { echo "markup: false warnings"; exit 1; }
+	@pdftotext markup.pdf - | tr '\n' ' ' | grep -qF 'SUBEQ: system (2), first row (2a), second row (2b).' || { echo "markup: subeqnarray citations"; exit 1; }
 	@rm -f acronym.aux
 	@for i in 1 2 3; do $(ENGINE) -interaction=nonstopmode -halt-on-error acronym >/dev/null || { echo "acronym: LaTeX error"; exit 1; }; done
 	@! grep -q 'may have changed' acronym.log || { echo "acronym: rerun requested forever"; exit 1; }
@@ -122,4 +127,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french acronym useraka nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french acronym useraka iop markup nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
