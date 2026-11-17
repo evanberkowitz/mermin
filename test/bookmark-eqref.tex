@@ -1,0 +1,8 @@
+\documentclass{article}
+\usepackage{amsmath}\usepackage{mermin}\usepackage{hyperref}
+% \eqref in a heading: Mermin's rules must not add to the bookmark's
+% warnings (hyperref itself warns about \textup and the like).
+\begin{document}
+\begin{equation} a=b \label{x} \end{equation}
+\section{About \eqref{x}}
+\end{document}

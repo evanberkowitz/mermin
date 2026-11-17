@@ -94,6 +94,17 @@ check:
 	@! grep -q 'multiply' subcaption.log || { echo "subcaption: aka defined its key again"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error xr-both >/dev/null || { echo "xr-both: LaTeX error"; exit 1; }; done
 	@pdftotext xr-both.pdf - | tr '\n' ' ' | grep -qF 'XRBOTH: the plain (2).' || { echo "xr-both: xr then xr-hyper lost the import"; exit 1; }
+	@# Mermin's rules: three unnumbered displays and two citations by number
+	@# alone warn; a derivation numbered once, a \tag, \eq, and a section
+	@# do not; the options silence both.
+	@for c in rules rules-off; do rm -f $$c.aux; for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; done
+	@grep -c "Fisher's rule" rules.log | grep -qx 3 || { echo "rules: expected three Fisher warnings"; exit 1; }
+	@grep -c 'cited by number' rules.log | grep -qx 2 || { echo "rules: expected two Good Samaritan warnings"; exit 1; }
+	@! grep -q 'mermin Warning' rules-off.log || { echo "rules-off: options did not silence the rules"; exit 1; }
+	@! grep -q 'Token not allowed' rules.log || { echo "rules: bookmark warnings"; exit 1; }
+	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error bookmark-eqref >/dev/null || { echo "bookmark-eqref: LaTeX error"; exit 1; }; done
+	@! grep -qE "removing .\\\\(global|let|mermin)" bookmark-eqref.log || { echo "bookmark-eqref: Mermin's rules leaked into a bookmark"; exit 1; }
+	@grep -q "Occam's rule" showonlyrefs.log || { echo "showonlyrefs: no Occam's rule warning"; exit 1; }
 	@rm -f latexdiff.aux
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error latexdiff >/dev/null || { echo "latexdiff: LaTeX error"; exit 1; }; done
 	@! grep -q 'multiply' latexdiff.log || { echo "latexdiff: a deleted aka defined its key again"; exit 1; }
@@ -149,4 +160,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun accent prefer subcaption xr-both adopt beamer french acronym useraka iop markup latexdiff ambiguous nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun accent rules rules-off bookmark-eqref prefer subcaption xr-both adopt beamer french acronym useraka iop markup latexdiff ambiguous nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex

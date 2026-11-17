@@ -1,0 +1,13 @@
+\begin{document}
+\section{Rules}\label{sec:rules}
+% Fisher: three displays without a number.
+\begin{equation*} a=b \end{equation*}
+\[ c=d \]
+\begin{align} e&=f \notag \\ g&=h \notag \end{align}
+% Not warned: a derivation numbered on its last line, and a \tag.
+\begin{align} f&=g \nonumber\\ &=h \nonumber\\ &=j \label{chain} \end{align}
+\begin{equation} k=l \tag{$\star$} \end{equation}
+% Good Samaritan: two citations by number alone (\eqref and \cref of an
+% equation); \eq, and \cref of a section, are fine.
+RULES: \eqref{chain}; \cref{chain,sec:rules}; \eq{chain}.
+\end{document}

@@ -47,6 +47,14 @@ and cited as `\eq{Gamma action}`, which prints "Γ action (n)". `\eq` is for
 equations only and warns when its key names a section, figure, or anything
 else.
 
+Two of Mermin's rules are checked, with warnings that never stop
+compilation. Fisher's rule, "number all displayed equations", warns at a
+display with no number (a derivation numbered once on its last line counts
+as numbered). The Good Samaritan rule, "identify [an equation] by a phrase
+as well as a number", warns when `\eqref` or `\cref` cites an equation
+by number alone. `\usepackage[nofisher,nosamaritan]{mermin}` turns them
+off.
+
 Short names are easily taken. `\alsolabel` and `\eqcite` are the same
 commands as `\aka` and `\eq` under names no other package uses. When a
 package such as nccmath, or the preamble, already defines `\eq` or `\aka`,

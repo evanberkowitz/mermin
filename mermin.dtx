@@ -240,6 +240,28 @@
 % is empty; and in |equation*| it takes the section's number.
 % Put it on a numbered line.
 %
+% \subsection{Mermin's rules as warnings}
+%
+% Two of Mermin's rules become warnings, which never stop compilation.
+% \emph{Fisher's rule}, ``number all displayed equations'', warns at
+% every display that typesets no number: |equation*|, |\[|\ldots|\]|,
+% or an \textsf{align} whose every line is \cs{notag}.
+% A derivation that is numbered once, on its last line, is one equation
+% and is numbered:
+% \begin{verbatim}
+% \begin{align}
+%   f &= g \nonumber\\
+%     &= h \label{f=h}
+% \end{align}
+% \end{verbatim}
+% The \textsf{mathtools} option |showonlyrefs|, which numbers only the
+% equations that are cited, is the practice Mermin calls Occam's rule, a
+% heresy; with it, one warning says so.
+% The \emph{Good Samaritan rule}, ``when referring to an equation identify
+% it by a phrase as well as a number'', warns when \cs{eqref}, \cs{cref},
+% or \cs{Cref} cites an equation by number alone; \cs{eq} does both.
+% The options |nofisher| and |nosamaritan| turn the warnings off.
+%
 % \subsection{Long names}
 %
 % \DescribeMacro{\alsolabel}
@@ -368,7 +390,7 @@
 %
 % \section{Implementation}
 %
-% The implementation has ten parts.
+% The implementation has eleven parts.
 % Parts~\ref{impl:load}--\ref{impl:aux} set up the package and the records
 % it keeps in the \texttt{.aux} file.
 % Parts~\ref{impl:aka}--\ref{impl:queue} define \cs{alsolabel} and the
@@ -377,6 +399,7 @@
 % \textsf{xr}.
 % Parts~\ref{impl:cite}--\ref{impl:short} define \cs{eqcite} and the
 % short names, and make both behave in headings and bookmarks.
+% Part~\ref{impl:rules} turns two of Mermin's rules into warnings.
 %
 % The narrative is here; the code carries short comments wherever a
 % construction looks odd or exists for one particular package, kernel
@@ -403,6 +426,15 @@
     \expandafter\let\csname equation*\endcsname\relax
     \expandafter\let\csname endequation*\endcsname\relax}}{}
 \RequirePackage{amsmath}
+%    \end{macrocode}
+%
+% Two options turn off the warnings of part~\ref{impl:rules}.
+%    \begin{macrocode}
+\newif\ifmermin@fisher \mermin@fishertrue
+\newif\ifmermin@samaritan \mermin@samaritantrue
+\DeclareOption{nofisher}{\mermin@fisherfalse}
+\DeclareOption{nosamaritan}{\mermin@samaritanfalse}
+\ProcessOptions\relax
 %    \end{macrocode}
 %
 % \subsection{Utilities}\label{impl:util}
@@ -1172,7 +1204,7 @@
         {}%
     \fi}%
   \ifmmode\@xp\text\else\@xp\@firstofone\fi
-    {\mermin@phrase{#1}{#2}~\eqref{#2}}}
+    {\mermin@phrase{#1}{#2}~\mermin@eqref{#2}}}
 \def\mermin@check@ambiguous#1{%
   \@ifundefined{r@#1}{}{\@ifundefined{r@eq:#1}{}{%
      % \ifx compares the two labels' number and page: keys of one line
@@ -1374,12 +1406,116 @@
       \let\eqcite\mermin@pdf@eq
        % latexdiff's markers, which this package makes robust.
       \let\DIFdelbegin\@empty
-      \let\DIFdelend\@empty}%
+      \let\DIFdelend\@empty
+       % Neither of Mermin's rules is for bookmarks.
+      \ifdefined\mermin@eqref\let\eqref\mermin@eqref\fi
+      \ifdefined\mermin@maketag\let\maketag@@@\mermin@maketag\fi}%
   \fi}
 \DeclareHookRule{env/document/begin}{mermin}{before}{beamer}
-%</package>
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \subsection{Mermin's rules as warnings}\label{impl:rules}
+%
+% \begin{macro}{\mermin@numberedtrue}
+% Fisher's rule: number every displayed equation.
+% A display counts as numbered when it typesets at least one number,
+% automatic or given by \cs{tag}; a derivation whose intermediate lines
+% are \cs{notag} is one equation, and is numbered.
+% Every number that \textsf{amsmath} typesets passes through
+% |\maketag@@@|, and every one the kernel's \textsf{eqnarray} typesets
+% through |\@eqnnum|; both raise a flag, which each display lowers when it
+% begins and reads when it has ended.
+% The flag is global, because the number is typeset inside the cells of
+% an alignment, which are groups.
+% A display that \textsf{latexdiff} marks as deleted is not checked.
+% With the \textsf{mathtools} option |showonlyrefs| a display is numbered
+% only if it is cited, the practice Mermin calls Occam's rule; then one
+% warning says so, and displays are not checked one by one.
+%    \begin{macrocode}
+\newif\ifmermin@numbered
+\def\mermin@fisher@begin{\global\mermin@numberedfalse}
+\def\mermin@fisher@after{%
+  \ifmermin@numbered\else\ifmermin@deleted\else
+    \PackageWarning{mermin}{Display without a number.\MessageBreak
+      Fisher's rule: number every displayed equation\MessageBreak
+      (option nofisher silences this)}%
+  \fi\fi}
+\def\mermin@fisherenv#1{%
+  \AddToHook{env/#1/begin}{\mermin@fisher@begin}%
+  \AddToHook{env/#1/after}{\mermin@fisher@after}}
+ % Installed by a macro of its own: skipped by \ifmermin@fisher, the
+ % \else and \fi of the showonlyrefs test would end that \if early.
+\def\mermin@fisher@install{%
+     % mathtools' showonlyrefs: \MH_if_boolean_show_only_refs: is
+     % \iftrue or \iffalse.
+    \@ifundefined{MH_if_boolean_show_only_refs:}{\@secondoftwo}%
+      {\csname MH_if_boolean_show_only_refs:\endcsname
+         \@xp\@firstoftwo\else\@xp\@secondoftwo\fi}%
+      {\PackageWarningNoLine{mermin}{mathtools' showonlyrefs numbers only
+         the equations\MessageBreak that are cited, which Mermin calls
+         Occam's rule;\MessageBreak Fisher's rule numbers them all
+         (option nofisher\MessageBreak silences this)}}%
+      {\let\mermin@maketag\maketag@@@
+       \def\maketag@@@{\global\mermin@numberedtrue\mermin@maketag}%
+       \let\mermin@eqnnum\@eqnnum
+       \def\@eqnnum{\global\mermin@numberedtrue\mermin@eqnnum}%
+        % \[ is equation* under amsmath.
+       \@for\mermin@env:=%
+           equation,equation*,align,align*,gather,gather*,%
+           multline,multline*,flalign,flalign*,alignat,alignat*,%
+           eqnarray,eqnarray*,displaymath%
+         \do{\@xp\mermin@fisherenv\@xp{\mermin@env}}}}
+\AddToHook{begindocument/end}{%
+  \ifmermin@fisher\@xp\mermin@fisher@install\fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\mermin@eqref}
+% The Good Samaritan rule: when referring to an equation, identify it by a
+% phrase as well as a number.
+% \cs{eqref}, and \textsf{cleveref}'s \cs{cref} and \cs{Cref}, warn when
+% they cite an equation by number alone; \cs{eqcite} calls the original
+% \cs{eqref}, saved as |\mermin@eqref|, and so never warns.
+% Only equations are checked, and only in a signed document, where they
+% are known.
+% Plain \cs{ref} is not checked: other commands, \cs{eqref} among them,
+% use it internally.
+%    \begin{macrocode}
+ % A first copy now, for beamer, which typesets its title, perhaps with
+ % \eq, before begindocument/end; the copy is refreshed there.
+\NewCommandCopy\mermin@eqref\eqref
+\def\mermin@samaritan#1{%
+  \ifdefined\mermin@signed
+    \@ifundefined{r@#1}{}{\@ifundefined{mermin@eq@#1}{}{%
+      \PackageWarning{mermin}{Equation `#1' is cited by number
+        alone.\MessageBreak Good Samaritan rule: name it too, as
+        \mermin@eqcs\space does\MessageBreak (option nosamaritan
+        silences this)}}}%
+  \fi}
+\AddToHook{begindocument/end}{%
+   % \NewCommandCopy, not \let: \eqref is robust, and a \let copy would
+   % call the redefined command.  mathtools' showonlyrefs has redefined
+   % \eqref by now, and the copy keeps its version.
+  \DeclareCommandCopy\mermin@eqref\eqref
+  \ifmermin@samaritan
+     % Robust, as amsmath's \eqref is, so that it still expands in a
+     % bookmark; there it is the original, installed with the short
+     % names.
+    \DeclareRobustCommand\eqref[1]{%
+      \mermin@samaritan{#1}\mermin@eqref{#1}}%
+     % cleveref's \cref and \Cref, starred or not, all pass their list
+     % of keys to \@cref.
+    \ifdefined\@cref
+      \let\mermin@cref\@cref
+      \def\@cref#1#2{%
+        \@for\mermin@k:=#2\do{\@xp\mermin@samaritan\@xp{\mermin@k}}%
+        \mermin@cref{#1}{#2}}%
+    \fi
+  \fi}
+%</package>
+%    \end{macrocode}
 % \end{macro}
 %
 % \Finale
