@@ -39,6 +39,9 @@ jobs:
           grep -E '^LaTeX2e <|^ *(amsmath|hyperref|cleveref)\.sty' versions.log
       - name: Generate mermin.sty
         run: make mermin.sty
+      - name: Build the manual
+        if: matrix.engine == 'pdflatex'
+        run: make mermin.pdf
       - name: Test
         run: make test ENGINE=${{ matrix.engine }}
       - name: Keep logs on failure

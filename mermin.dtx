@@ -28,6 +28,8 @@
 %
 %<*driver>
 \documentclass{ltxdoc}
+ % doc before v3 (LaTeX 2022-06) does not load hyperref for \href and \url.
+\IfFormatAtLeastTF{2022-06-01}{}{\usepackage[hidelinks]{hyperref}}
 \usepackage{amsmath}
 \usepackage{mermin}
 \PassOptionsToPackage{hidelinks}{hyperref}
@@ -230,6 +232,10 @@
 % labels the next numbered line, even one with its own \cs{label}, where
 % two \cs{label}s would be an error; put it on a numbered line.
 % \textsf{witharrows}' |DispWithArrows| is not supported.
+% \textsf{latexdiff} shows a changed \cs{eq} only when told that it is
+% safe to keep in deleted text, with |--append-safecmd=eq,eqcite|; do not
+% add |aka|, which would bring deleted labels back.
+% An \cs{aka} in text \textsf{latexdiff} marks as deleted is ignored.
 % \textsf{showkeys} and \textsf{showlabels} show the first key of a
 % display line, not the keys \cs{aka} adds to it.
 % The \textsf{iopart} class conflicts with \textsf{amsmath}, which this
@@ -519,8 +525,29 @@
 % Releases before 2025-06-01 disable \cs{label} as |\@gobble| or
 % |\relax|; later ones as |\@gobble@om|, or |\@gobble@with@sphack@om|
 % where the text is typeset, which \cs{alsolabel} then uses itself.
+%
+% \cs{alsolabel} also disappears in text that \textsf{latexdiff} marks as
+% deleted.
+% \textsf{latexdiff} keeps a deleted display, as |displaymath| between
+% |\DIFdelbegin| and |\DIFdelend|, and comments out the \cs{label}s in
+% it, but its list of label commands is fixed and cannot be extended; a
+% deleted \cs{alsolabel} would define its key a second time, possibly with
+% the wrong number.
+% The package therefore raises a flag, |\mermin@indel|, between the two
+% markers.
 %    \begin{macrocode}
+\let\mermin@indel\relax
+\AddToHook{begindocument/end}{%
+  \ifdefined\DIFdelbegin % latexdiff output
+    \let\mermin@DIFdelbegin\DIFdelbegin
+    \let\mermin@DIFdelend\DIFdelend
+    \protected\def\DIFdelbegin{%
+      \global\let\mermin@indel\@empty\mermin@DIFdelbegin}%
+    \protected\def\DIFdelend{%
+      \mermin@DIFdelend\global\let\mermin@indel\relax}%
+  \fi}
 \def\alsolabel{%
+  \ifx\mermin@indel\@empty \mermin@aka@use\mermin@gobble@aka\fi
   \ifx\label\@gobble \mermin@aka@use\mermin@gobble@aka\fi
   \ifx\label\relax \mermin@aka@use\mermin@gobble@aka\fi
   \ifx\label\@gobble@om \mermin@aka@use\mermin@gobble@aka\fi
@@ -978,12 +1005,16 @@
 % \begin{macro}{\mermin@cite}
 % \cs{eqcite} resolves its argument and passes the argument and the key to
 % |\mermin@cite|, which warns if the key is a label but not an equation,
+% or if the argument and |eq:|\meta{argument} are both labels of different
+% equations (as when a revision adds |\aka{mass}| to one equation while an
+% older |\eq{mass}| meant |\label{eq:mass}| on another),
 % and prints the phrase, a tie, and the number from \cs{eqref}, which
 % \textsf{hyperref} makes a link.
 % In math mode the whole citation is set as text.
 %    \begin{macrocode}
 \NewDocumentCommand\eqcite{m}{\mermin@resolve{#1}{\mermin@cite{#1}}}
 \def\mermin@cite#1#2{%
+  \mermin@check@ambiguous{#1}%
   \@ifundefined{r@#2}{}{%
     \ifdefined\mermin@marked
       \@ifundefined{mermin@eq@#2}%
@@ -1006,6 +1037,13 @@
 % it a phrase; before the first run defines it, every key is quietly
 % verbatim if need be, because its phrase may simply not be known yet.
 %    \begin{macrocode}
+\def\mermin@check@ambiguous#1{%
+  \@ifundefined{r@#1}{}{\@ifundefined{r@eq:#1}{}{%
+    \@xp\ifx\csname r@#1\@xp\endcsname\csname r@eq:#1\endcsname
+    \else
+      \PackageWarning{mermin}{`#1' and `eq:#1' label different
+        equations;\MessageBreak \mermin@eqcs{#1} cites `#1'}%
+    \fi}}}
 \def\mermin@phrase#1#2{%
   \@ifundefined{mermin@ph@#2}%
     {\protected@edef\mermin@text{\mermin@keytext{#1}{#2}}%

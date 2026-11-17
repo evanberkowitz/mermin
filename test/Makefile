@@ -81,6 +81,13 @@ check:
 	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error markup >/dev/null || { echo "markup: LaTeX error"; exit 1; }; done
 	@! grep -q 'mermin Warning' markup.log || { echo "markup: false warnings"; exit 1; }
 	@pdftotext markup.pdf - | tr '\n' ' ' | grep -qF 'SUBEQ: system (2), first row (2a), second row (2b).' || { echo "markup: subeqnarray citations"; exit 1; }
+	@rm -f latexdiff.aux
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error latexdiff >/dev/null || { echo "latexdiff: LaTeX error"; exit 1; }; done
+	@! grep -q 'multiply' latexdiff.log || { echo "latexdiff: a deleted \\aka defined its key again"; exit 1; }
+	@pdftotext latexdiff.pdf - | tr '\n' ' ' | grep -qF 'the partition function (1)' || { echo "latexdiff: wrong citation"; exit 1; }
+	@for i in 1 2; do $(ENGINE) -interaction=nonstopmode -halt-on-error ambiguous >/dev/null || { echo "ambiguous: LaTeX error"; exit 1; }; done
+	@grep -q "mermin Warning: .mass' and .eq:mass' label different" ambiguous.log || { echo "ambiguous: no warning"; exit 1; }
+	@! grep -q "label different" edge-plain.log eq-plain.log || { echo "spurious ambiguity warning"; exit 1; }
 	@rm -f acronym.aux
 	@for i in 1 2 3; do $(ENGINE) -interaction=nonstopmode -halt-on-error acronym >/dev/null || { echo "acronym: LaTeX error"; exit 1; }; done
 	@! grep -q 'may have changed' acronym.log || { echo "acronym: rerun requested forever"; exit 1; }
@@ -127,4 +134,4 @@ check:
 	fi
 
 clean:
-	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french acronym useraka iop markup nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS) $(WARN_CONFIGS) showonlyrefs rerun-edit xr-supp xr-plain xr-before xr-after breqn firstrun adopt beamer french acronym useraka iop markup latexdiff ambiguous nomark edge-plain edge-cleveref inc-with inc-without unicode-math,$c.aux $c.log $c.out $c.pdf $c.toc $c.lof $c.nav $c.snm) inc-ch1.aux inc-ch2.aux rerun-edit.tex
