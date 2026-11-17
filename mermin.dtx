@@ -21,7 +21,7 @@
 %<package>\NeedsTeXFormat{LaTeX2e}[2020/10/01]
 %<package>\ProvidesPackage{mermin}
 %<*package>
-    [2026/11/16 v0.1 Mermin-style equation tools]
+    [2026/11/16 v0.2 Mermin-style equation tools]
 %</package>
 %
 %<*driver>
@@ -43,6 +43,7 @@
 % \CheckSum{0}
 %
 % \changes{v0.1}{2026/11/16}{Initial version, providing \cs{alsolabel}.}
+% \changes{v0.2}{2026/11/16}{Added \cs{eq}; phrases are the keys.}
 %
 % \GetFileInfo{mermin.sty}
 %
@@ -63,10 +64,10 @@
 % The \textsf{mermin} package helps physicists write equations the way
 % N.~David Mermin asks in ``What's Wrong with These Equations?''\
 % \cite{mermin}.
-% Its first tool, \cs{alsolabel}, gives one numbered equation, or one line
-% of an \textsf{align}, as many labels as the prose needs, so that every
-% citation of that equation can carry a key that matches the noun phrase
-% used to cite it.
+% An equation is labeled by the noun phrases that describe it, as many as
+% the prose needs, with \cs{alsolabel}, and cited by one of those phrases
+% with \cs{eq}, which prints the phrase and the number together.
+% Citing an equation by a bare number becomes the harder thing to write.
 % \end{abstract}
 %
 % \section{Introduction}
@@ -85,68 +86,81 @@
 % punctuated as part of its sentence, so that the paragraph reads straight
 % through the equation.
 %
-% The Good Samaritan rule has a cost that \LaTeX\ makes worse than it need
-% be.
-% The right phrase for an equation depends on why it is being cited.
+% \LaTeX\ makes the Good Samaritan rule harder than it need be.
+% A label is an arbitrary key, so nothing ties a citation to the phrase
+% that should accompany it, and \textsf{amsmath} allows a numbered line
+% exactly one \cs{label}, although the right phrase depends on why the
+% equation is being cited.
 % The same line may be ``the anomaly condition'' in one paragraph and
-% ``the Pythagorean condition'' in another, yet \textsf{amsmath} allows a
-% numbered line exactly one \cs{label}.
-% The key then names only one of the roles, and the source no longer says
-% what the author meant at each citation.
-% The \cs{alsolabel} command removes this restriction without changing
-% \cs{label}.
+% ``the Pythagorean condition'' in another.
+% This package makes the phrase the key.
+% A line is labeled by each phrase that describes it, and \cs{eq} cites it
+% by one of them, printing the phrase and the number.
 %
 % \section{Usage}
 %
 % \DescribeMacro{\alsolabel}
+% \DescribeMacro{\eq}
 % Load the package with |\usepackage{mermin}|.
-% Then |\alsolabel{|\meta{key}|}| attaches \meta{key} to the current
-% equation, or to the current line of a multi-line display, in addition
-% to its \cs{label}.
+% Then |\alsolabel{|\meta{phrase}|}| attaches \meta{phrase} as a key to the
+% current equation, or to the current line of a multi-line display, in
+% addition to its \cs{label}.
 % It may be used any number of times on a line, before or after the
 % \cs{label}, or on a line that has no \cs{label} at all.
 % Every key refers to the same number and, with \textsf{hyperref}, to the
 % same anchor.
+% |\eq{|\meta{phrase}|}| prints \meta{phrase}, a tie, and the equation
+% number in parentheses, linked by \textsf{hyperref} to the equation.
+%
 % Consider two-flavor chiral gauge theories whose gauge anomaly cancels
 % when the left- and right-handed charges obey
 % \begin{equation}
 %   L_1^2+L_2^2=R_1^2+R_2^2.
-%   \label{eq:anomaly}
-%   \alsolabel{eq:pythagorean}
+%   \label{anomaly condition}
+%   \alsolabel{Pythagorean condition}
 % \end{equation}
-% The source of this display reads
+% The source of this display, and of a paragraph that cites it, reads
 % \begin{verbatim}
 % \begin{equation}
 %   L_1^2+L_2^2=R_1^2+R_2^2.
-%   \label{eq:anomaly}
-%   \alsolabel{eq:pythagorean}
+%   \label{anomaly condition}
+%   \alsolabel{Pythagorean condition}
 % \end{equation}
 %
-% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies the anomaly
-% condition~\eqref{eq:anomaly}.
-% Read as a statement about integers, the same line is the Pythagorean
-% condition~\eqref{eq:pythagorean}, and $3^2+4^2=5^2$ is its smallest
-% nontrivial solution.
+% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies
+% the \eq{anomaly condition}.
+% Read as a statement about integers, the same line is
+% the \eq{Pythagorean condition}, and $3^2+4^2=5^2$ is its
+% smallest nontrivial solution.
 % \end{verbatim}
-% which gives each citation a key that matches its phrase and typesets as
+% and typesets as
 % \begin{quote}
-% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies the anomaly
-% condition~\eqref{eq:anomaly}.
-% Read as a statement about integers, the same line is the Pythagorean
-% condition~\eqref{eq:pythagorean}, and $3^2+4^2=5^2$ is its smallest
-% nontrivial solution.
+% The 3450 model, with charges $(3,4\,\vert\,5,0)$, satisfies
+% the \eq{anomaly condition}.
+% Read as a statement about integers, the same line is
+% the \eq{Pythagorean condition}, and $3^2+4^2=5^2$ is its
+% smallest nontrivial solution.
 % \end{quote}
+% The article stays in the prose, where the sentence decides whether it is
+% ``the'', ``this'', or nothing at all.
 %
-% Lines of an \textsf{align} are labeled the same way, one set of keys per
-% line, and a line may be labeled by \cs{alsolabel} alone:
+% Lines of an \textsf{align} are labeled the same way, one set of phrases
+% per line, and a line may be labeled by \cs{alsolabel} alone:
 % \begin{verbatim}
 % \begin{align}
-%   a &= b  \label{eq:first} \alsolabel{eq:first-again} \\
-%   c &= d  \alsolabel{eq:second}
+%   S &= \int d^2x\,\mathcal{L} \label{action} \alsolabel{fermion action} \\
+%   P_{L,R} &= \tfrac12(1\pm\gamma_5) \alsolabel{chiral projectors}
 % \end{align}
 % \end{verbatim}
-% Outside a display \cs{alsolabel} is simply \cs{label}, so it can also
-% give a section or a figure a second name.
+%
+% Labels written with an |eq:| prefix, as many papers already have, need
+% no change: when no label \meta{phrase} exists, \cs{eq} uses
+% |eq:|\meta{phrase}, so |\eq{shift relation}| cites
+% |\label{eq:shift relation}|.
+% A phrase that cannot be a key, because it contains mathematics or a
+% command, takes the key as an optional argument:
+% |\eq[Gamma action]{$\Gamma$ action}| prints ``$\Gamma$ action'' and the
+% number of the line labeled |Gamma action|.
 %
 % Because \cs{label} is left alone, two \cs{label}s on one line remain the
 % error \textsf{amsmath} has always reported; only \cs{alsolabel} adds
@@ -154,6 +168,9 @@
 % Citing a key with \cs{ref}, \cs{eqref}, \cs{pageref}, or the
 % \textsf{cleveref} command \cs{cref} works exactly as for a key given to
 % \cs{label}.
+% Outside a display \cs{alsolabel} is simply \cs{label}, so it can also
+% give a section, a figure, or a theorem a second name.
+% \cs{eq} is for equations only, since it prints a parenthesized number.
 %
 % \section{Compatibility}
 %
@@ -403,9 +420,32 @@
       \expandafter\mermin@label@in@display
     \fi}%
 }
-%</package>
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\eq}
+% \cs{eq} prints its phrase, a tie, and the equation number from
+% \cs{eqref}, which \textsf{hyperref} makes a link.
+% Without the optional argument the phrase is also the key, unless only
+% |eq:|\meta{phrase} is defined, in which case that key is used.
+% Before the first run defines any label, the key is the phrase itself,
+% so the usual undefined-reference warning names it.
+%    \begin{macrocode}
+\NewDocumentCommand\eq{o m}{%
+  \IfNoValueTF{#1}%
+    {\mermin@eq@key{#2}}%
+    {\def\mermin@key{#1}}%
+  #2~\@xp\eqref\@xp{\mermin@key}%
+}
+\def\mermin@eq@key#1{%
+  \def\mermin@key{#1}%
+  \@ifundefined{r@#1}{%
+    \@ifundefined{r@eq:#1}{}{\def\mermin@key{eq:#1}}%
+  }{}%
+}
+%</package>
+%    \end{macrocode}
 % \end{macro}
 %
 % \Finale

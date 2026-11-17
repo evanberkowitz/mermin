@@ -1,13 +1,17 @@
-# make -C test : build every configuration twice and check the .aux files.
-CONFIGS = plain hyperref cleveref mermin-first
+# make -C test : build every configuration twice and check the results.
+CONFIGS    = test-plain test-hyperref test-cleveref test-mermin-first
+EQ_CONFIGS = eq-plain eq-cleveref
 export TEXINPUTS := ..:
+
 check:
-	@for c in $(CONFIGS); do \
-	  pdflatex -interaction=nonstopmode -halt-on-error test-$$c >/dev/null && \
-	  pdflatex -interaction=nonstopmode -halt-on-error test-$$c >/dev/null || { echo "$$c: LaTeX error, see test-$$c.log"; exit 1; }; \
-	  ! grep -q 'multiply defined\|undefined' test-$$c.log || { echo "$$c: label warnings"; exit 1; }; \
+	@for c in $(CONFIGS) $(EQ_CONFIGS); do \
+	  pdflatex -interaction=nonstopmode -halt-on-error $$c >/dev/null && \
+	  pdflatex -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error, see $$c.log"; exit 1; }; \
+	  ! grep -q 'multiply defined\|undefined' $$c.log || { echo "$$c: label warnings"; exit 1; }; \
 	done
-	@python3 check.py $(addsuffix .aux,$(addprefix test-,$(CONFIGS))) | grep -v ' ok$$' ; \
-	python3 check.py $(addsuffix .aux,$(addprefix test-,$(CONFIGS))) >/dev/null && echo "all configurations pass"
+	@python3 check.py $(addsuffix .aux,$(CONFIGS)) | grep -v ' ok$$' ; \
+	python3 check.py $(addsuffix .aux,$(CONFIGS)) >/dev/null && printf "%s\n" "\\alsolabel checks pass"
+	@python3 check_eq.py $(addsuffix .pdf,$(EQ_CONFIGS))
+
 clean:
-	rm -f test-*.aux test-*.log test-*.out test-*.pdf
+	rm -f $(foreach c,$(CONFIGS) $(EQ_CONFIGS),$c.aux $c.log $c.out $c.pdf)

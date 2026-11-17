@@ -4,31 +4,31 @@ Tools for writing equations the way N. David Mermin asks in
 "What's Wrong with These Equations?", *Physics Today* **42**(10), 9 (1989),
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
-Version 0.1, 2026/11/16.
+Version 0.2, 2026/11/16.
 
 ## Description
 
 Mermin's Good Samaritan rule asks that every equation be cited by a noun
 phrase as well as its number: "the anomaly condition (3)", never a bare
-"(3)". The right phrase depends on why the equation is being cited, but
-amsmath allows a numbered line only one `\label`.
-
-`\alsolabel{key}` gives one equation, or one line of an `align`, as many
-labels as the prose needs, so every citation can carry a key that matches
-its phrase:
+"(3)". This package makes the phrase the label. `\alsolabel{phrase}` gives
+an equation, or one line of an `align`, as many phrases as the prose needs,
+and `\eq{phrase}` cites it by one of them, printing the phrase and the
+linked number:
 
 ```latex
 \usepackage{mermin}
 ...
 \begin{equation}
   L_1^2+L_2^2=R_1^2+R_2^2.
-  \label{eq:anomaly}
-  \alsolabel{eq:pythagorean}
+  \label{anomaly condition}
+  \alsolabel{Pythagorean condition}
 \end{equation}
-The 3450 model satisfies the anomaly condition~\eqref{eq:anomaly}.
-Read as a statement about integers, the same line is the Pythagorean
-condition~\eqref{eq:pythagorean}.
+The 3450 model satisfies the \eq{anomaly condition}.
+Read as a statement about integers, the same line is
+the \eq{Pythagorean condition}.
 ```
+
+prints "the anomaly condition (1)" and "the Pythagorean condition (1)".
 
 `\alsolabel` may come before or after `\label`, any number of times, or
 replace it entirely. Every key gets the line's number and hyperref anchor,
@@ -36,6 +36,10 @@ and `\ref`, `\eqref`, `\pageref`, and `\cref` all work. It supports the
 amsmath displays (`equation`, `align`, `gather`, `multline`, `split`,
 `subequations`) and `empheq`, with hyperref and cleveref loaded in any
 order. `\label` itself is unchanged.
+
+`\eq{phrase}` falls back to the label `eq:phrase`, so existing `eq:` labels
+need no change. A phrase that cannot be a key takes one as an optional
+argument: `\eq[Gamma action]{$\Gamma$ action}`.
 
 The full documentation, including Mermin's three rules and the
 annotated implementation, is `mermin.pdf`.
@@ -72,7 +76,9 @@ make test
 typesets every supported environment, with the keys in every order, in four
 package configurations (amsmath alone; with hyperref; with hyperref and
 cleveref; and with mermin loaded first), and checks that every key in each
-`.aux` file resolves to its line's number and anchor.
+`.aux` file resolves to its line's number and anchor. It also checks the
+text `\eq` prints, for phrase keys, `eq:` keys, optional keys, and
+non-ASCII phrases.
 
 ## License
 
