@@ -37,11 +37,11 @@ jobs:
           printf '%s\n' '\documentclass{article}\usepackage{amsmath,hyperref,cleveref}\listfiles\begin{document}\end{document}' > versions.tex
           ${{ matrix.engine }} -interaction=nonstopmode versions.tex >/dev/null || true
           grep -E '^LaTeX2e <|^ *(amsmath|hyperref|cleveref)\.sty' versions.log
-      - name: Generate mermin.sty
-        run: make mermin.sty
+      - name: Generate mermin-equations.sty
+        run: make mermin-equations.sty
       - name: Build the manual
         if: matrix.engine == 'pdflatex'
-        run: make mermin.pdf
+        run: make mermin-equations.pdf
       - name: Test
         run: make test ENGINE=${{ matrix.engine }}
       - name: Keep logs on failure
@@ -63,9 +63,9 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends make
-      - name: Build mermin.pdf
+      - name: Build mermin-equations.pdf
         run: make
       - uses: actions/upload-artifact@v4
         with:
-          name: mermin.pdf
-          path: mermin.pdf
+          name: mermin-equations.pdf
+          path: mermin-equations.pdf

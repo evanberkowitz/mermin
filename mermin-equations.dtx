@@ -11,19 +11,19 @@
 %
 % This work has the LPPL maintenance status `maintained'.
 % The Current Maintainer of this work is Evan Berkowitz.
-% This work consists of the files mermin.dtx and mermin.ins and the derived
-% file mermin.sty.
+% This work consists of the files mermin-equations.dtx and
+% mermin-equations.ins and the derived file mermin-equations.sty.
 %
 % \fi
 %
 % \iffalse
 %<*driver>
-\ProvidesFile{mermin.dtx}
+\ProvidesFile{mermin-equations.dtx}
 %</driver>
 %<package>\NeedsTeXFormat{LaTeX2e}[2021/11/15]
-%<package>\ProvidesPackage{mermin}
+%<package>\ProvidesPackage{mermin-equations}
 %<*package>
-    [2026/11/17 v0.1 Mermin-style equation tools]
+    [2026/11/18 v0.1.1 Mermin-style equation tools]
 %</package>
 %
 %<*driver>
@@ -34,12 +34,12 @@
  % \usepackage{hyperref} would.
 \IfFormatAtLeastTF{2022-06-01}{}{\usepackage{hypdoc}}
 \usepackage{amsmath}
-\usepackage{mermin}
+\usepackage{mermin-equations}
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
 \begin{document}
-  \DocInput{mermin.dtx}
+  \DocInput{mermin-equations.dtx}
   \PrintChanges
   \clearpage
   \PrintIndex
@@ -48,8 +48,9 @@
 % \fi
 %
 % \changes{v0.1}{2026/11/17}{Initial version, providing \cs{aka} (\cs{alsolabel}) and \cs{eq} (\cs{eqcite}).}
+% \changes{v0.1.1}{2026/11/18}{Renamed from \textsf{mermin} to \textsf{mermin-equations} at CTAN's request; the commands are unchanged.}
 %
-% \GetFileInfo{mermin.sty}
+% \GetFileInfo{mermin-equations.sty}
 %
 % \DoNotIndex{\begingroup,\endgroup,\def,\gdef,\let,\global,\else,\fi}
 % \DoNotIndex{\ifx,\ifdefined,\expandafter,\noexpand,\unexpanded,\xdef}
@@ -57,15 +58,15 @@
 % \DoNotIndex{\AddToHook,\NeedsTeXFormat,\ProvidesPackage,\RequirePackage}
 % \DoNotIndex{\@ifnextchar,\endinput}
 %
-% \title{The \textsf{mermin} package\thanks{This document corresponds to
-%   \textsf{mermin}~\fileversion, dated \filedate.}}
+% \title{The \textsf{mermin-equations} package\thanks{This document corresponds to
+%   \textsf{mermin-equations}~\fileversion, dated \filedate.}}
 % \author{Evan Berkowitz}
 % \date{\filedate}
 %
 % \maketitle
 %
 % \begin{abstract}
-% The \textsf{mermin} package helps physicists write equations the way
+% The \textsf{mermin-equations} package helps physicists write equations the way
 % N.~David Mermin asks in ``What's Wrong with These Equations?''\
 % \cite{mermin}.
 % An equation is labeled by the noun phrases that describe it, as many as
@@ -105,7 +106,7 @@
 %
 % \DescribeMacro{\aka}
 % \DescribeMacro{\eq}
-% Load the package with |\usepackage{mermin}|.
+% Load the package with |\usepackage{mermin-equations}|.
 % Then |\aka{|\meta{phrase}|}|, for ``also known as'', attaches
 % \meta{phrase} as a key to the
 % current equation, or to the current line of a multi-line display, in
@@ -275,13 +276,13 @@
 % \begingroup
 % \def\MacroFont{\footnotesize\ttfamily}
 % \begin{verbatim}
-% Package mermin Warning: `equation*' display without a number.
-% (mermin)                Fisher's rule: number every displayed equation
-% (mermin)                (option nofisher silences this) on input line 4.
+% Package mermin-equations Warning: `equation*' display without a number.
+% (mermin-equations)                Fisher's rule: number every display
+% (mermin-equations)                (option nofisher) on input line 4.
 %
-% Package mermin Warning: Equation `chain' is cited by number alone.
-% (mermin)                Good Samaritan rule: name it too, as \eq does
-% (mermin)                (option nosamaritan silences this) on input line 12.
+% Package mermin-equations Warning: `chain' is cited by number alone.
+% (mermin-equations)                Good Samaritan rule: name it, as \eq does
+% (mermin-equations)                (option nosamaritan) on input line 12.
 % \end{verbatim}
 % \endgroup
 % The first names the environment (|\[|\ldots|\]| is |equation*|) and
@@ -291,10 +292,10 @@
 % \begingroup
 % \def\MacroFont{\footnotesize\ttfamily}
 % \begin{verbatim}
-% Package mermin Warning: mathtools' showonlyrefs numbers only the equations
-% (mermin)                that are cited, which Mermin calls Occam's rule;
-% (mermin)                Fisher's rule numbers them all (option nofisher
-% (mermin)                silences this).
+% Package mermin-equations Warning: mathtools' showonlyrefs numbers only the
+% (mermin-equations)                equations that are cited, which Mermin calls
+% (mermin-equations)                Occam's rule; Fisher's rule numbers them all
+% (mermin-equations)                (option nofisher silences this).
 % \end{verbatim}
 % \endgroup
 %
@@ -307,7 +308,7 @@
 % \cs{eq}, under names no other package uses.
 % Several packages, among them \textsf{nccmath}, define their own \cs{eq},
 % and a document may define its own \cs{aka}.
-% \textsf{mermin} then leaves the existing command alone, says so in a
+% \textsf{mermin-equations} then leaves the existing command alone, says so in a
 % warning, and the document uses the long name instead.
 %
 % \section{Compatibility}
@@ -317,12 +318,12 @@
 % The package requires a \LaTeX\ format from 2021-11-15 or later, for the
 % hooks it uses, and loads \textsf{amsmath}.
 % Load \textsf{amsmath} with options, such as |fleqn|, before
-% \textsf{mermin}, as before any package that loads it.
+% \textsf{mermin-equations}, as before any package that loads it.
 % \textsf{hyperref} and \textsf{cleveref} may be loaded before or after
-% \textsf{mermin}; \textsf{cleveref}, as always, after \textsf{amsmath}.
+% \textsf{mermin-equations}; \textsf{cleveref}, as always, after \textsf{amsmath}.
 % arXiv compiles papers with its own fixed \TeX\ Live installations, which
 % do not receive new packages, so a paper submitted there should include
-% \texttt{mermin.sty} among its files.
+% \texttt{mermin-equations.sty} among its files.
 %
 % \subsection{Displays}
 %
@@ -342,14 +343,14 @@
 % equation of a document loaded with |\externaldocument[S-]|, and prints
 % its phrase, or its key without the prefix; the |eq:| fallback reaches
 % it too, so |\eq{S-sum rule}| cites |\label{eq:sum rule}| there.
-% A document that does not use \textsf{mermin} has no record of which
+% A document that does not use \textsf{mermin-equations} has no record of which
 % labels are equations, so \cs{eq} treats all of its labels as equations.
-% Load \textsf{mermin} before calling \cs{externaldocument}: a document
+% Load \textsf{mermin-equations} before calling \cs{externaldocument}: a document
 % read earlier is imported without its phrases or its record of which
 % labels are equations, so its keys print with the prefix, the |eq:|
 % fallback does not reach it, and \cs{eq} warns about every one.
 %
-% A paper that adopts \textsf{mermin} while \cs{includeonly} leaves out
+% A paper that adopts \textsf{mermin-equations} while \cs{includeonly} leaves out
 % chapters may see such warnings for equations in those chapters, until
 % each is compiled once with the package.
 %
@@ -439,7 +440,7 @@
 %
 % The narrative is here; the code carries short comments wherever a
 % construction looks odd or exists for one particular package, kernel
-% version, or engine, so that a reader of the bare \texttt{mermin.sty} is
+% version, or engine, so that a reader of the bare \texttt{mermin-equations.sty} is
 % not lost.
 % Two words are kept apart: a key is \emph{marked} when it is recorded as
 % an equation, and an \texttt{.aux} file is \emph{signed} when it was
@@ -474,6 +475,19 @@
 %    \end{macrocode}
 %
 % \subsection{Utilities}\label{impl:util}
+%
+% \begin{macro}{\mermin@warn}
+% \begin{macro}{\mermin@warn@noline}
+% Every warning goes through these, so the package's name is written once.
+% A warning's lines are kept under 45 characters: the prefix
+% |(mermin-equations)| and its padding take 34 of the 79 that \TeX\
+% prints before it breaks a line of the log.
+%    \begin{macrocode}
+\def\mermin@warn{\PackageWarning{mermin-equations}}
+\def\mermin@warn@noline{\PackageWarningNoLine{mermin-equations}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
 %
 % \begin{macro}{\mermin@firstchar}
 % \begin{macro}{\mermin@ifeqprefix}
@@ -669,15 +683,16 @@
 % the wrong number.
 % The package therefore sets |\ifmermin@deleted| between the two markers.
 % \textsf{latexdiff} defines them in the preamble, after
-% |\usepackage{mermin}|, so they are wrapped only at
+% |\usepackage{mermin-equations}|, so they are wrapped only at
 % |begindocument/end|.
 %    \begin{macrocode}
 \newif\ifmermin@deleted
 \AddToHook{begindocument/end}{%
    % latexdiff defines its markers in the preamble, after
-   % \usepackage{mermin}.  They are made \protected so that, in a
-   % moving argument such as a heading, they are written as themselves
-   % and still set the flag when the heading is typeset again.
+   % \usepackage{mermin-equations}.  They are made \protected so that,
+   % in a moving argument such as a heading, they are written as
+   % themselves and still set the flag when the heading is typeset
+   % again.
   \ifdefined\DIFdelbegin
     \let\mermin@DIFdelbegin\DIFdelbegin
     \let\mermin@DIFdelend\DIFdelend
@@ -1121,8 +1136,9 @@
   \else\ifx#1\mermin@newphrase
     \@xp\gdef\csname mermin@ph@\XR@prefix#2\endcsname{#3}%
   \else\ifx#1\newlabel
-     % An unsigned file, from a document without mermin, has no marks:
-     % treat all its labels as equations rather than warn about each.
+     % An unsigned file, from a document without this package, has no
+     % marks: treat all its labels as equations rather than warn about
+     % each.
     \ifdefined\mermin@xr@signed\else\mermin@xr@import{#2}\fi
   \fi\fi\fi\fi
   \mermin@xr@orig#1{#2}{#3}#4\XR@}
@@ -1232,11 +1248,12 @@
   \@ifundefined{r@#2}{}{%
     \ifdefined\mermin@signed
       \@ifundefined{mermin@eq@#2}%
-        {\PackageWarning{mermin}{`#1' is not an equation
-           label,\MessageBreak yet \mermin@eqcs\space prints a
-           parenthesized equation number;\MessageBreak use
-           \string\ref\space or \string\cref\space for figures,
-           sections, and theorems}}%
+        {\mermin@warn{%
+           `#1' is not an equation\MessageBreak
+           label, yet \mermin@eqcs\space prints a parenthesized%
+           \MessageBreak
+           equation number; for a figure, section, or\MessageBreak
+           theorem, use \string\ref\space or \string\cref}}%
         {}%
     \fi}%
   \ifmmode\@xp\text\else\@xp\@firstofone\fi
@@ -1247,8 +1264,10 @@
      % agree.
     \@xp\ifx\csname r@#1\@xp\endcsname\csname r@eq:#1\endcsname
     \else
-      \PackageWarning{mermin}{`#1' and `eq:#1' label different
-        equations;\MessageBreak \mermin@eqcs{#1} cites `#1'}%
+      \mermin@warn{%
+        `#1' and `eq:#1' label different\MessageBreak
+        equations;\MessageBreak
+        \mermin@eqcs\space cites `#1'}%
     \fi}}}
 %    \end{macrocode}
 % \end{macro}
@@ -1292,12 +1311,14 @@
  % #1 is the text printed, #2 the argument, #3 the key.
 \def\mermin@warn@unprintable#1#2#3{%
   \@ifundefined{mermin@xrdef@#3}%
-    {\PackageWarning{mermin}{`#2' has no typeset phrase and is not
-       text,\MessageBreak so it is printed verbatim; where it is
-       defined, write\MessageBreak \mermin@akacs[<phrase>]{#3}}}%
-    {\PackageWarning{mermin}{`#2' has no typeset phrase and is not
-       text,\MessageBreak so it is printed verbatim; give it a
-       phrase in the\MessageBreak document that defines `#1'}}}
+    {\mermin@warn{`#2' has no typeset phrase\MessageBreak
+       and is not text, so it is printed verbatim;\MessageBreak
+       where it is defined, write\MessageBreak
+       \mermin@akacs[<phrase>]{#3}}}%
+    {\mermin@warn{`#2' has no typeset phrase\MessageBreak
+       and is not text, so it is printed verbatim;\MessageBreak
+       give it a phrase in the document\MessageBreak
+       that defines `#1'}}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1421,14 +1442,15 @@
 \def\mermin@shortname#1#2{%
   \@ifundefined{#1}%
     {\@xp\let\csname #1\endcsname#2}%
-    {\PackageWarningNoLine{mermin}{\@backslashchar#1 was already
-      defined, by a package or\MessageBreak the preamble, and is left
-      alone; write \string#2\space instead}}}
+    {\mermin@warn@noline{\@backslashchar#1
+      was already defined, by a package or\MessageBreak
+      the preamble, and is left alone;\MessageBreak
+      write \string#2\space instead}}}
  % env/document/begin, not begindocument/before or later: beamer builds
  % the PDF title, which may hold \eq, in this same hook (ordered after
  % this code by the rule below), and its themes typeset section titles
  % in \AtBeginDocument code.
-\AddToHook{env/document/begin}[mermin]{%
+\AddToHook{env/document/begin}[mermin-equations]{%
   \mermin@shortname{eq}\eqcite
   \mermin@shortname{aka}\alsolabel
   \ifx\aka\alsolabel\def\mermin@akacs{\string\aka}\fi
@@ -1447,7 +1469,8 @@
       \let\eqref\mermin@eqref
       \ifdefined\mermin@maketag\let\maketag@@@\mermin@maketag\fi}%
   \fi}
-\DeclareHookRule{env/document/begin}{mermin}{before}{beamer}
+\DeclareHookRule{env/document/begin}
+  {mermin-equations}{before}{beamer}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1483,9 +1506,10 @@
 \def\mermin@fisher@after#1{%
   \ifmermin@numbered\else\ifmermin@deleted\else
   \ifnum\mermin@slide>\@ne\else
-    \PackageWarning{mermin}{`#1' display without a number.\MessageBreak
-      Fisher's rule: number every displayed equation\MessageBreak
-      (option nofisher silences this)}%
+    \mermin@warn{%
+      `#1' display without a number.\MessageBreak
+      Fisher's rule: number every display\MessageBreak
+      (option nofisher)}%
   \fi\fi\fi}
  % beamer typesets a frame once per overlay slide; warn on the first.
  % A number, tested with a real \ifnum: a macro expanding to \ifnum
@@ -1503,11 +1527,11 @@
     \@ifundefined{MH_if_boolean_show_only_refs:}{\@secondoftwo}%
       {\csname MH_if_boolean_show_only_refs:\endcsname
          \@xp\@firstoftwo\else\@xp\@secondoftwo\fi}%
-      {\PackageWarningNoLine{mermin}{mathtools' showonlyrefs
-         numbers only the equations\MessageBreak
-         that are cited, which Mermin calls Occam's rule;\MessageBreak
-         Fisher's rule numbers them all (option nofisher\MessageBreak
-         silences this)}}%
+      {\mermin@warn@noline{%
+         mathtools' showonlyrefs numbers only the\MessageBreak
+         equations that are cited, which Mermin calls\MessageBreak
+         Occam's rule; Fisher's rule numbers them all\MessageBreak
+         (option nofisher silences this)}}%
       {\let\mermin@maketag\maketag@@@
        \def\maketag@@@{\global\mermin@numberedtrue\mermin@maketag}%
        \let\mermin@eqnnum\@eqnnum
@@ -1566,10 +1590,11 @@
   \ifnum\mermin@slide>\@ne\else
   \ifdefined\mermin@signed
     \@ifundefined{r@#1}{}{\@ifundefined{mermin@eq@#1}{}{%
-      \PackageWarning{mermin}{Equation `#1' is cited by number
-        alone.\MessageBreak Good Samaritan rule: name it too, as
-        \mermin@eqcs\space does\MessageBreak (option nosamaritan
-        silences this)}}}%
+      \mermin@warn{%
+        `#1' is cited by number alone.\MessageBreak
+        Good Samaritan rule: name it, as \mermin@eqcs\space does%
+        \MessageBreak
+        (option nosamaritan)}}}%
   \fi\fi\fi\fi}
 \AddToHook{begindocument/end}{%
    % A command copy, not \let, since \eqref is robust.  mathtools'

@@ -5,8 +5,8 @@ EXPECTED = {'the section', 'other section name', 'a figure', 'table in a p colum
 NO_CLEVEREF_ONLY = {'figure via ltx label'}
 ok = True
 for log in sys.argv[1:]:
-    text = re.sub(r'\n\(mermin\)\s*', ' ', open(log, errors='replace').read())
-    warned = set(re.findall(r"Package mermin Warning: `(.*?)' is not an equation label", text))
+    text = re.sub(r'\n\(mermin-equations\)\s*', ' ', open(log, errors='replace').read())
+    warned = set(re.findall(r"Package mermin-equations Warning: `(.*?)' is not an equation", text))
     expected = EXPECTED | (set() if 'cleveref' in log else NO_CLEVEREF_ONLY)
     if warned != expected:
         print(f'{log}: warned for {sorted(warned)}, expected {sorted(expected)}')

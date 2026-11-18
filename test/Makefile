@@ -19,7 +19,7 @@ check:
 	@python3 check.py $(addsuffix .aux,$(CONFIGS)) | grep -v ' ok$$' ; \
 	python3 check.py $(addsuffix .aux,$(CONFIGS)) >/dev/null && printf "%s\n" "\\alsolabel checks pass"
 	@python3 check_eq.py $(addsuffix .pdf,$(EQ_CONFIGS))
-	@# nccmath defines \eq and eq-nccmath defines \aka: mermin must leave both
+	@# nccmath defines \eq and eq-nccmath defines \aka: mermin-equations must leave both
 	@# alone and say so, and only there.
 	@for n in eq aka; do \
 	  grep -qF "\\$$n was already defined" eq-nccmath.log || { printf '%s\n' "eq-nccmath: no \\$$n-taken warning"; exit 1; }; \
@@ -53,12 +53,12 @@ check:
 	  for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
 	  python3 -c "import subprocess,sys,unicodedata; t=unicodedata.normalize('NFC',' '.join(subprocess.run(['pdftotext','$$c.pdf','-'],capture_output=True,text=True).stdout.split())); sys.exit(0 if 'XR: the Γ act (1) holds and plain (2).' in t and 'XRQ: the sum rule (3).' in t and 'XRU: E_field (4).' in t and 'XRP: gauss (1); sum rule (2).' in t and 'XRM: mass (5).' in t else 1)" || { echo "$$c: phrase not imported"; exit 1; }; \
 	  ! grep -q 'not an equation\|undefined' $$c.log || { echo "$$c: warnings"; exit 1; }; \
-	  grep -q "S-E_field' has no typeset phrase" $$c.log && grep -q 'document that defines' $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
+	  grep -q "S-E_field' has no typeset phrase" $$c.log && grep -q 'give it a phrase in the document' $$c.log || { echo "$$c: no warning for an unprintable key"; exit 1; }; \
 	done
 	@printf '%s\n' 'xr checks pass'
 	@# breqn's displays are equations: no warnings, right numbers.
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error breqn >/dev/null || { echo "breqn: LaTeX error"; exit 1; }; done
-	@! grep -q 'mermin Warning\|undefined\|multiply' breqn.log || { echo "breqn: warnings"; exit 1; }
+	@! grep -q 'mermin-equations Warning\|undefined\|multiply' breqn.log || { echo "breqn: warnings"; exit 1; }
 	@pdftotext breqn.pdf - | tr '\n' ' ' | grep -q 'BREQN: A (1) A two (1) D (2) G (3a) G two (3a)\.' || { echo "breqn: wrong citations"; exit 1; }
 	@pdftotext breqn.pdf - | tr '\n' ' ' | grep -q 'GROUP: GRP (4)\.' || { echo "breqn: dgroup label"; exit 1; }
 	@printf '%s\n' 'breqn checks pass'
@@ -68,14 +68,14 @@ check:
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error firstrun >/dev/null || { echo "firstrun: LaTeX error on run $$i"; exit 1; }; done
 	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'See the E field (1).' || { echo "firstrun: wrong citation"; exit 1; }
 	@pdftotext firstrun.pdf - | tr '\n' ' ' | grep -qF 'The H_0 (2) holds.' || { echo "firstrun: unprintable key not printed verbatim"; exit 1; }
-	@grep -q "mermin Warning: .H_0' has no typeset phrase" firstrun.log || { echo "firstrun: no warning for an unprintable key"; exit 1; }
+	@grep -q "mermin-equations Warning: .H_0' has no typeset phrase" firstrun.log || { echo "firstrun: no warning for an unprintable key"; exit 1; }
 	@rm -f accent.aux; for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error accent >/dev/null || { echo "accent: LaTeX error on run $$i"; exit 1; }; done
 	@pdftotext accent.pdf - | tr '\n' ' ' | grep -qF 'ACCENT: the Schr\"odinger (1).' || { echo "accent: wrong text"; exit 1; }
-	@# A paper that adopts mermin has an .aux without equation marks: no
-	@# warnings until mermin has written one.
+	@# A paper that adopts mermin-equations has an .aux without equation marks: no
+	@# warnings until mermin-equations has written one.
 	@printf '%s\n' '\relax' '\newlabel{anomaly}{{1}{1}}' '\newlabel{fig:x}{{1}{1}}' > adopt.aux
 	@$(TEX) -interaction=nonstopmode -halt-on-error adopt >/dev/null || { echo "adopt: LaTeX error"; exit 1; }
-	@! grep -q 'mermin Warning' adopt.log || { echo "adopt: warnings from an .aux mermin did not write"; exit 1; }
+	@! grep -q 'mermin-equations Warning' adopt.log || { echo "adopt: warnings from an .aux mermin-equations did not write"; exit 1; }
 	@# beamer: \aka<overlay> in a display drops the overlay.
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error beamer >/dev/null || { echo "beamer: LaTeX error"; exit 1; }; done
 	@pdftotext beamer.pdf - | grep -qF 'BEAMER: first phrase (1); two (2).' || { echo "beamer: wrong citations"; exit 1; }
@@ -85,11 +85,11 @@ check:
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error iop >/dev/null || { echo "iop: LaTeX error with an iopart-like class"; exit 1; }; done
 	@pdftotext iop.pdf - | grep -qF 'IOP: the anomaly condition (1).' || { echo "iop: wrong citation"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error markup >/dev/null || { echo "markup: LaTeX error"; exit 1; }; done
-	@! grep -q 'mermin Warning' markup.log || { echo "markup: false warnings"; exit 1; }
+	@! grep -q 'mermin-equations Warning' markup.log || { echo "markup: false warnings"; exit 1; }
 	@pdftotext markup.pdf - | tr '\n' ' ' | grep -qF 'SUBEQ: system (2), first row (2a), second row (2b).' || { echo "markup: subeqnarray citations"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error prefer >/dev/null || { echo "prefer: LaTeX error"; exit 1; }; done
 	@pdftotext prefer.pdf - | tr '\n' ' ' | grep -qF 'PREFER: the mass (3).' || { echo "prefer: eq{mass} did not prefer the equation eq:mass"; exit 1; }
-	@! grep -q 'mermin Warning' prefer.log || { echo "prefer: warnings"; exit 1; }
+	@! grep -q 'mermin-equations Warning' prefer.log || { echo "prefer: warnings"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error subcaption >/dev/null || { echo "subcaption: LaTeX error"; exit 1; }; done
 	@! grep -q 'multiply' subcaption.log || { echo "subcaption: aka defined its key again"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error xr-both >/dev/null || { echo "xr-both: LaTeX error"; exit 1; }; done
@@ -103,7 +103,7 @@ check:
 	@grep -c 'cited by number' rules.log | grep -qx 4 || { echo "rules: expected four Good Samaritan warnings"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error letref >/dev/null || { echo "letref: LaTeX error (a let copy of eqref)"; exit 1; }; done
 	@pdftotext letref.pdf - | grep -qF 'LETREF: see Eq. (1).' || { echo "letref: wrong text"; exit 1; }
-	@! grep -q 'mermin Warning' rules-off.log || { echo "rules-off: options did not silence the rules"; exit 1; }
+	@! grep -q 'mermin-equations Warning' rules-off.log || { echo "rules-off: options did not silence the rules"; exit 1; }
 	@! grep -qE "removing .\\\\(global|let|mermin|protect)" rules.log || { echo "rules: Mermin's rules leaked into a bookmark"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error bookmark-eqref >/dev/null || { echo "bookmark-eqref: LaTeX error"; exit 1; }; done
 	@! grep -qE "removing .\\\\(global|let|mermin)" bookmark-eqref.log || { echo "bookmark-eqref: Mermin's rules leaked into a bookmark"; exit 1; }
@@ -114,7 +114,7 @@ check:
 	@! grep -qE "removing .DIFdel(begin|end)" latexdiff.log || { echo "latexdiff: bookmark warnings from latexdiff's markers"; exit 1; }
 	@pdftotext latexdiff.pdf - | tr '\n' ' ' | grep -qF 'the partition function (1)' || { echo "latexdiff: wrong citation"; exit 1; }
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error ambiguous >/dev/null || { echo "ambiguous: LaTeX error"; exit 1; }; done
-	@grep -q "mermin Warning: .mass' and .eq:mass' label different" ambiguous.log || { echo "ambiguous: no warning"; exit 1; }
+	@grep -q "mermin-equations Warning: .mass' and .eq:mass' label different" ambiguous.log || { echo "ambiguous: no warning"; exit 1; }
 	@rm -f acronym.aux
 	@for i in 1 2 3; do $(TEX) -interaction=nonstopmode -halt-on-error acronym >/dev/null || { echo "acronym: LaTeX error"; exit 1; }; done
 	@! grep -q 'may have changed' acronym.log || { echo "acronym: rerun requested forever"; exit 1; }
@@ -126,14 +126,14 @@ check:
 	@pdftotext french.pdf - | tr '\n' ' ' | grep -qF 'FRENCH la relation (1) et la relation (1).' || { echo "french: eq: prefix with an active colon"; exit 1; }
 	@# \eq warns about non-equations even when no equation is labeled.
 	@for i in 1 2; do $(TEX) -interaction=nonstopmode -halt-on-error nomark >/dev/null || { echo "nomark: LaTeX error"; exit 1; }; done
-	@grep -c 'is not an equation label' nomark.log | grep -qx 2 || { echo "nomark: expected two warnings"; exit 1; }
+	@grep -c 'is not an equation' nomark.log | grep -qx 2 || { echo "nomark: expected two warnings"; exit 1; }
 	@printf '%s\n' 'first-run checks pass'
 	@# Moving arguments, bookmarks, keys with & and macros, \eq in math, and
 	@# equations of cases, IEEEtrantools, and eqnarray.
 	@for c in edge-plain edge-cleveref; do \
 	  rm -f $$c.aux; \
 	  for i in 1 2 3; do $(TEX) -interaction=nonstopmode -halt-on-error $$c >/dev/null || { echo "$$c: LaTeX error"; exit 1; }; done; \
-	  ! grep -q 'mermin Warning\|undefined\|multiply\|may have changed\|Token not allowed' $$c.log || { echo "$$c: warnings"; exit 1; }; \
+	  ! grep -q 'mermin-equations Warning\|undefined\|multiply\|may have changed\|Token not allowed' $$c.log || { echo "$$c: warnings"; exit 1; }; \
 	  ! grep -q 'aka' $$c.toc $$c.lof || { echo "$$c: aka written to the contents"; exit 1; }; \
 	  pdftotext $$c.pdf - | tr '\n' ' ' | grep -qF 'EDGE: Maxwell & Faraday (2); mass phrase (3); sec2:energy (3); numcases line (4); IEEE line (6); eqnarray line (7); 1; 1.' || { echo "$$c: wrong citations"; exit 1; }; \
 	  pdftotext $$c.pdf - | grep -qF 'MIXED: mixed phrase (9).' || { echo "$$c: a key given twice on one line"; exit 1; }; \
@@ -149,10 +149,10 @@ check:
 	@sed 's/\\000//g' edge-cleveref.out | grep -qF 'On\040the\040anomaly\040condition\040\0501\051' || { echo "edge-cleveref: bookmark lacks the phrase and number"; exit 1; }
 	@! grep -q "label different" edge-plain.log eq-plain.log || { echo "spurious ambiguity warning"; exit 1; }
 	@printf '%s\n' 'edge-case checks pass'
-	@# A document that drops mermin must still read an excluded file's .aux.
+	@# A document that drops mermin-equations must still read an excluded file's .aux.
 	@rm -f inc-ch1.aux inc-ch2.aux
 	@$(TEX) -interaction=nonstopmode -halt-on-error inc-with >/dev/null || { echo "inc-with: LaTeX error"; exit 1; }
-	@$(TEX) -interaction=nonstopmode -halt-on-error inc-without >/dev/null || { echo "inc-without: cannot read inc-ch1.aux without mermin"; exit 1; }
+	@$(TEX) -interaction=nonstopmode -halt-on-error inc-without >/dev/null || { echo "inc-without: cannot read inc-ch1.aux without mermin-equations"; exit 1; }
 	@printf '%s\n' 'include checks pass'
 	@# unicode-math (LuaLaTeX and XeLaTeX only): a Greek phrase must settle.
 	@if ! echo "$(ENGINE)" | grep -q pdflatex; then \
