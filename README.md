@@ -5,6 +5,8 @@ Tools for writing equations the way N. David Mermin asks in
 [doi:10.1063/1.2811173](https://doi.org/10.1063/1.2811173).
 
 Version 0.1.1, 2026/11/18.
+On CTAN as
+[mermin-equations](https://ctan.org/pkg/mermin-equations).
 
 ## Description
 
